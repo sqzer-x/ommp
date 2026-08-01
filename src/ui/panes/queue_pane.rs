@@ -1,4 +1,4 @@
-use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -253,25 +253,9 @@ impl Pane for QueuePane {
         }
     }
 
-    fn handle_mouse(&mut self, event: MouseEvent, area: Rect, app: &App) -> Option<AppAction> {
-        let block = Block::default().borders(Borders::ALL);
-        let inner = block.inner(area);
-        let count = app.queue.tracks.len();
-
+    fn handle_mouse(&mut self, event: MouseEvent, _area: Rect, app: &App) -> Option<AppAction> {
+        // Clicks are handled in handler.rs, which owns queue selection.
         match event.kind {
-            MouseEventKind::Down(MouseButton::Left) => {
-                if event.column >= inner.x
-                    && event.column < inner.x + inner.width
-                    && event.row >= inner.y
-                    && event.row < inner.y + inner.height
-                {
-                    let clicked = self.scroll_offset + (event.row - inner.y) as usize;
-                    if clicked < count {
-                        // Selection handled by handler.rs
-                    }
-                }
-                None
-            }
             MouseEventKind::ScrollDown => self.handle_scroll(false, app),
             MouseEventKind::ScrollUp => self.handle_scroll(true, app),
             _ => None,

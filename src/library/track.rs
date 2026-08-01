@@ -22,8 +22,6 @@ pub struct Track {
     pub sample_rate: Option<u32>,
     pub bit_depth: Option<u8>,
     pub channels: Option<u8>,
-    #[allow(dead_code)]
-    pub lyrics: Option<String>,
 }
 
 impl Track {
@@ -71,9 +69,6 @@ impl Track {
             sample_rate: properties.sample_rate(),
             bit_depth: properties.bit_depth(),
             channels: properties.channels(),
-            lyrics: tag
-                .and_then(|t| t.get_string(&ItemKey::Lyrics))
-                .map(|s| s.to_string()),
         })
     }
 
@@ -155,7 +150,6 @@ mod tests {
             sample_rate,
             bit_depth,
             channels,
-            lyrics: None,
         }
     }
 

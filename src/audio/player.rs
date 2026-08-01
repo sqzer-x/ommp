@@ -96,10 +96,10 @@ fn player_thread(cmd_rx: Receiver<PlayerCommand>, event_tx: Sender<Event>) {
                                 play_start = Some(Instant::now());
                                 let _ = event_tx.send(Event::Audio(AudioEvent::Playing));
                             }
-                            Err(e) => {
+                            Err(_) => {
                                 duration = 0.0;
                                 play_start = None;
-                                let _ = event_tx.send(Event::Audio(AudioEvent::TrackError(e)));
+                                let _ = event_tx.send(Event::Audio(AudioEvent::TrackError));
                             }
                         }
                     }

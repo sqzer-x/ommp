@@ -221,11 +221,6 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
         return actions;
     }
 
-    // In search input mode, ignore (search handled by modal now)
-    if app.search_mode {
-        return actions;
-    }
-
     // Chord: Ctrl+E pressed, waiting for next key
     if ui.chord_pending {
         ui.chord_pending = false;

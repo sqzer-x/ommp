@@ -148,7 +148,6 @@ pub struct QueueState {
     pub tracks: Vec<usize>,
     pub current_index: Option<usize>,
     pub selected_index: usize,
-    pub scroll_offset: usize,
     /// Positions into `tracks`, in shuffled play order — a real permutation, so
     /// a shuffled pass reaches every track exactly once and can end. Empty while
     /// shuffle is off.

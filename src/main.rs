@@ -208,7 +208,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                         // Handle queue selection directly for playlist focus
                         // Skip when any modal is open
                         if app.focus == FocusedPane::Playlist
-                            && !app.search_mode
                             && !ui.show_search_modal
                             && !ui.show_help_modal
                             && !ui.show_playlist_modal
@@ -233,7 +232,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                             handler::handle_mouse_event(mouse, &app, &mut ui, area)
                         }
                     }
-                    Event::Resize(_, _) => {
+                    Event::Resize => {
                         vec![] // Will re-render on next loop
                     }
                     Event::Tick => {
@@ -272,7 +271,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                                 duration_secs,
                             }],
                             AudioEvent::TrackFinished => vec![app::AppAction::TrackFinished],
-                            AudioEvent::TrackError(_) => vec![app::AppAction::TrackFailed],
+                            AudioEvent::TrackError => vec![app::AppAction::TrackFailed],
                             AudioEvent::DeviceError(msg) => {
                                 app.audio_error = Some(msg);
                                 app.playback.state = app::state::PlayState::Stopped;

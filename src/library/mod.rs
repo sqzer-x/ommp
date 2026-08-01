@@ -40,17 +40,6 @@ impl Library {
         result
     }
 
-    #[allow(dead_code)]
-    pub fn get_album_artists(&self) -> Vec<String> {
-        let mut set = BTreeSet::new();
-        for t in &self.tracks {
-            if !t.album_artist.is_empty() {
-                set.insert(t.album_artist.clone());
-            }
-        }
-        set.into_iter().collect()
-    }
-
     pub fn get_genres(&self) -> Vec<String> {
         let mut set = BTreeSet::new();
         for t in &self.tracks {
@@ -91,16 +80,6 @@ impl Library {
             .collect()
     }
 
-    #[allow(dead_code)]
-    pub fn get_tracks_by_album_artist(&self, album_artist: &str) -> Vec<usize> {
-        self.tracks
-            .iter()
-            .enumerate()
-            .filter(|(_, t)| t.album_artist == album_artist)
-            .map(|(i, _)| i)
-            .collect()
-    }
-
     pub fn get_tracks_by_album(&self, album: &str) -> Vec<usize> {
         self.tracks
             .iter()
@@ -117,17 +96,6 @@ impl Library {
             .filter(|(_, t)| t.genre == genre)
             .map(|(i, _)| i)
             .collect()
-    }
-
-    #[allow(dead_code)]
-    pub fn get_albums_by_album_artist(&self, album_artist: &str) -> Vec<String> {
-        let mut set = BTreeSet::new();
-        for t in &self.tracks {
-            if t.album_artist == album_artist && !t.album.is_empty() {
-                set.insert(t.album.clone());
-            }
-        }
-        set.into_iter().collect()
     }
 
     pub fn get_formats(&self) -> Vec<String> {

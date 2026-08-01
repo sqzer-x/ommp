@@ -62,9 +62,6 @@ pub struct App {
     pub queue: QueueState,
     pub library: Library,
     pub music_dir: PathBuf,
-    pub search_query: String,
-    pub search_mode: bool,
-    pub search_results: Vec<usize>,
     pub playlists: Vec<state::Playlist>,
     pub sync_state: SyncState,
     pub initial_scan_complete: bool,
@@ -87,9 +84,6 @@ impl App {
             queue: QueueState::default(),
             library: Library::new(),
             music_dir,
-            search_query: String::new(),
-            search_mode: false,
-            search_results: Vec::new(),
             playlists: vec![state::Playlist::new("Bookmarks")],
             sync_state: SyncState::Idle,
             initial_scan_complete: false,
@@ -207,14 +201,12 @@ impl App {
                 self.queue.current_index =
                     if self.queue.tracks.is_empty() { None } else { Some(0) };
                 self.queue.selected_index = 0;
-                self.queue.scroll_offset = 0;
                 self.resync_shuffle_order(false);
             }
             AppAction::ClearQueue => {
                 self.queue.tracks.clear();
                 self.queue.current_index = None;
                 self.queue.selected_index = 0;
-                self.queue.scroll_offset = 0;
                 // Without this the engine keeps playing a track the queue no
                 // longer contains, and its position updates keep the clock running.
                 self.stop_playback();
@@ -372,9 +364,6 @@ impl App {
         self.queue.selected_index = self.queue.selected_index.min(
             self.queue.tracks.len().saturating_sub(1)
         );
-        self.queue.scroll_offset = self.queue.scroll_offset.min(
-            self.queue.tracks.len().saturating_sub(1)
-        );
 
         // Remap playlists. Entries the new library lacks are parked in `missing`
         // rather than dropped, and anything parked earlier is restored if it came
@@ -399,11 +388,6 @@ impl App {
             }
             pl.tracks = tracks;
             pl.missing = missing;
-        }
-
-        // Remap search results
-        if !self.search_query.is_empty() {
-            self.search_results = new_lib.search(&self.search_query);
         }
 
         self.library = new_lib;
@@ -622,7 +606,6 @@ mod tests {
                 sample_rate: None,
                 bit_depth: None,
                 channels: None,
-                lyrics: None,
             })
             .collect();
         app.handle_action(AppAction::ReplaceQueue((0..len).collect()));
