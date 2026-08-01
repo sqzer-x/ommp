@@ -2,10 +2,13 @@ use lofty::config::ParseOptions;
 use lofty::file::AudioFile;
 use lofty::prelude::*;
 use lofty::probe::Probe;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-#[derive(Debug, Clone)]
+/// Serializable so the scan cache can store parsed tags verbatim; every field
+/// here came out of the file, so restoring one is equivalent to re-reading it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Track {
     pub path: PathBuf,
     pub title: String,
