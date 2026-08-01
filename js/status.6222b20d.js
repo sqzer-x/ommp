@@ -48,14 +48,29 @@
   addEventListener("resize", onScroll);
   update();
 
-  // Click a command to copy it — the page is mostly commands.
+  // Click a command to copy it — the page is mostly commands. The button role
+  // and the tab stop are set here rather than in the markup: copying is only
+  // possible once this file has run, so without it these are plain text and
+  // should not claim to be anything else.
   document.querySelectorAll("[data-copy]").forEach(function (el) {
-    el.addEventListener("click", function () {
+    el.tabIndex = 0;
+    el.setAttribute("role", "button");
+
+    function copy() {
       if (!navigator.clipboard) return;
       navigator.clipboard.writeText(el.textContent.trim()).then(function () {
         el.classList.add("is-copied");
         setTimeout(function () { el.classList.remove("is-copied"); }, 1400);
       });
+    }
+
+    el.addEventListener("click", copy);
+    el.addEventListener("keydown", function (e) {
+      // What a real button answers to.
+      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        copy();
+      }
     });
   });
 })();

@@ -13,9 +13,7 @@
 <meta property="og:description" content="A terminal music player written in Rust. No MPD, no daemon — point it at ~/Music and press play.">
 <meta property="og:url" content="https://ommp.sqzer.com/">
 <meta property="og:image" content="https://ommp.sqzer.com/img/og.png">
-<meta name="twitter:card" content="summary_large_image">
-
-<link rel="icon" href="/img/logo.png">
+<meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="preload" as="font" type="font/woff2" href="/fonts/jetbrains-mono-400.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/fonts/bricolage-grotesque-var.woff2" crossorigin>
 <link rel="stylesheet" href="/css/main.a6589403.css">
@@ -33,7 +31,7 @@
     <h1 class="display">
       Point it at ~/Music.<br><em>Press play.</em>
     </h1>
-    <p class="lede">No MPD. No daemon. No config file. One binary that reads your tags, draws your album art in the terminal, and picks up where you left off.</p>
+    <p class="lede">No MPD. No daemon. No config file. One binary that reads your tags, draws your album art in the terminal, and keeps your playlists and layout between sessions.</p>
 
     <div class="installs">
       <div class="install">
@@ -77,11 +75,11 @@
       </li>
       <li class="feature" style="--accent: #FFB464">
         <span class="feature-name">Artists</span>
-        <p class="feature-body">Grouped by album artist where it is tagged, track artist where it is not. Untagged files land under one heading instead of vanishing.</p>
+        <p class="feature-body">Grouped by the track artist, exactly as the file is tagged. Untagged files land under one heading instead of vanishing.</p>
       </li>
       <li class="feature" style="--accent: #C882FF">
         <span class="feature-name">Albums</span>
-        <p class="feature-body">Paired with their artist, so two records called <em>Greatest Hits</em> stay two records.</p>
+        <p class="feature-body">Paired with the album artist where it is tagged, the track artist where it is not — so two records called <em>Greatest Hits</em> stay two records.</p>
       </li>
       <li class="feature" style="--accent: #FF7896">
         <span class="feature-name">Genre</span>
@@ -244,6 +242,6 @@
   </div>
 </div>
 
-<script src="/js/status.4d369529.js" defer></script>
+<script src="/js/status.6222b20d.js" defer></script>
 </body>
 </html>
