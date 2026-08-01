@@ -50,9 +50,6 @@ keys_body_2 = "The mouse works too, when your hand is already there: click a tab
 
 # ── 6. Install ───────────────────────────────────────────────────────────
 install_title  = "Install it."
-install_lede   = "About 7 MB installed, linked against alsa-lib, glibc and gcc-libs and nothing else, and a 5,000-track library opens in about 18 ms once its tags are cached."
-install_note_1 = "Two things to set while you are here. ommp draws its interface with <a href=\"https://www.nerdfonts.com/\">Nerd Font</a> glyphs, so point your terminal at a Nerd Font or the icons arrive as empty boxes. And album art comes through as a real image in terminals that speak Kitty graphics, Sixel or the iTerm2 protocol; ommp works out which at startup and there is nothing for you to configure. Everywhere else the cover is drawn in blocks."
-install_note_2 = "Linux only, said plainly: it is untested anywhere else and does not compile on Windows. It plays what is on your disk, so there is no streaming, no catalogue and no account, and it does not resume the track you were playing last time."
 install_close  = "Then put some music in <code>~/Music</code> and run <code>ommp</code>."
 splash_note    = "The notes behind the top of this page are the ones ommp scatters across its splash screen, generated from the same hash the program uses."
 

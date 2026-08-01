@@ -151,25 +151,39 @@ a:hover { color: var(--cyan); }
   color: var(--ink-2); font-size: 1.0625rem;
 }
 
-.installs { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+.installs { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; justify-content: center; }
+.installs-left { justify-content: flex-start; margin-bottom: 2.5rem; }
 .install { text-align: left; }
 .install-label {
   display: block; font-size: .75rem; letter-spacing: .14em; text-transform: uppercase;
   color: var(--ink-2); margin-bottom: .4rem;
 }
 
+/* The box is sized by the command, and the button sits outside it, so nothing
+   moves when you copy — only the icon changes. */
+.cmdline { display: flex; align-items: stretch; gap: .5rem; }
 .cmd {
-  display: block;
   font-family: var(--mono); font-size: .9375rem;
   background: var(--panel); border: 1px solid var(--line);
   padding: .7rem 1rem; border-radius: 4px;
   color: var(--ink); white-space: nowrap; overflow-x: auto;
 }
+/* The prompt lives in a pseudo-element, which never reaches the clipboard. */
 .cmd::before { content: "$ "; color: var(--dim); }
-.cmd[data-copy] { cursor: pointer; }
-.cmd[data-copy]:hover { border-color: var(--sky); }
-.cmd.is-copied { border-color: var(--playing); }
-.cmd.is-copied::after { content: " copied"; color: var(--playing); }
+
+.cmd-copy {
+  flex: none; display: grid; place-items: center;
+  width: 2.5rem; padding: 0;
+  background: none; border: 1px solid var(--line); border-radius: 4px;
+  color: var(--ink-2); cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.cmd-copy:hover { color: var(--ink); border-color: var(--sky); background: #ffffff0a; }
+.cmd-copy svg { width: 15px; height: 15px; }
+.cmd-copy svg:last-child { display: none; }
+.cmd-copy.is-copied { color: var(--playing); border-color: var(--playing); }
+.cmd-copy.is-copied svg:first-child { display: none; }
+.cmd-copy.is-copied svg:last-child { display: block; }
 
 .hero-meta { margin-top: 2rem; color: var(--ink-2); font-size: .875rem; }
 
@@ -243,10 +257,24 @@ a:hover { color: var(--cyan); }
 .setup { font-size: .9375rem; }
 .setup-skipped { list-style: none; margin: 0 0 1.5rem; padding: 0; display: grid; gap: .7rem; }
 .setup-skipped li {
+  position: relative; width: max-content; max-width: 100%;
   color: var(--dim);
-  text-decoration: line-through;
-  text-decoration-color: #FF329699;
-  text-decoration-thickness: 1px;
+}
+.setup-skipped li::after {
+  content: ""; position: absolute; inset-inline: 0; top: .62em;
+  height: 1px; background: var(--pink);
+  transform-origin: left;
+}
+
+/* Once the script is running the lines arrive unstruck and are crossed out one
+   at a time as the section comes into view. Without it they are simply already
+   crossed out, which is the state that makes the point. */
+.setup-armed .setup-skipped li { color: var(--ink-2); transition: color .4s ease; }
+.setup-armed .setup-skipped li::after { transform: scaleX(0); transition: transform .45s ease; }
+.setup-armed .setup-skipped li.is-struck { color: var(--dim); }
+.setup-armed .setup-skipped li.is-struck::after { transform: scaleX(1); }
+@media (prefers-reduced-motion: reduce) {
+  .setup-armed .setup-skipped li::after { transition: none; }
 }
 .setup-real {
   margin: 0; font-weight: 700; font-size: 1.5rem;
@@ -292,25 +320,9 @@ kbd {
   display: inline-block; text-align: center;
 }
 
-/* ── Install grid ─────────────────────────────────────────────────── */
+/* ── Install ──────────────────────────────────────────────────────── */
 
-.install-grid {
-  display: grid; gap: 1rem; margin-bottom: 2rem;
-  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
-}
-/* The clone URL is longer than a third of the wrap. Scrolling it inside the
-   card hides the end behind no affordance at all, so wrap it instead — the
-   whole string is what gets copied either way. Wrapping makes that one box two
-   lines tall, so the boxes are stretched to a common height rather than left
-   with one hanging 24px below its neighbours. */
-.install-card { display: grid; grid-template-rows: auto 1fr; }
-.install-card .cmd { white-space: normal; overflow-wrap: anywhere; height: 100%; }
-
-.install-close { margin: 0 0 2.5rem; font-size: 1.0625rem; }
-/* Everything a person about to type the command needs to know, at the size that
-   says it is not the reason they came. */
-.fine { max-width: 46rem; margin: 0 0 1rem; color: var(--ink-2); font-size: .875rem; }
-.fine:last-child { margin-bottom: 0; }
+.install-close { margin: 0; font-size: 1.0625rem; }
 
 /* ── Footer ───────────────────────────────────────────────────────── */
 

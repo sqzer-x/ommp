@@ -48,29 +48,40 @@
   addEventListener("resize", onScroll);
   update();
 
-  // Click a command to copy it — the page is mostly commands. The button role
-  // and the tab stop are set here rather than in the markup: copying is only
-  // possible once this file has run, so without it these are plain text and
-  // should not claim to be anything else.
-  document.querySelectorAll("[data-copy]").forEach(function (el) {
-    el.tabIndex = 0;
-    el.setAttribute("role", "button");
-
-    function copy() {
+  // Copy a command. The button is its own element beside the box, so the box
+  // never resizes — the icon swaps and that is the whole feedback.
+  document.querySelectorAll(".cmd-copy").forEach(function (btn) {
+    var cmd = btn.parentNode.querySelector(".cmd");
+    if (!cmd) return;
+    btn.addEventListener("click", function () {
       if (!navigator.clipboard) return;
-      navigator.clipboard.writeText(el.textContent.trim()).then(function () {
-        el.classList.add("is-copied");
-        setTimeout(function () { el.classList.remove("is-copied"); }, 1400);
+      // textContent, so the "$ " prompt drawn by CSS is left behind.
+      navigator.clipboard.writeText(cmd.textContent.trim()).then(function () {
+        btn.classList.add("is-copied");
+        setTimeout(function () { btn.classList.remove("is-copied"); }, 1600);
       });
-    }
-
-    el.addEventListener("click", copy);
-    el.addEventListener("keydown", function (e) {
-      // What a real button answers to.
-      if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-        e.preventDefault();
-        copy();
-      }
     });
   });
+
+  // The setup you skip crosses itself out as you reach it. The markup ships
+  // already struck, so this first un-strikes it and then puts the lines back
+  // one at a time; if the script never runs, the finished state is what shows.
+  var setup = document.querySelector(".setup-skipped");
+  if (setup && "IntersectionObserver" in window) {
+    var lines = Array.prototype.slice.call(setup.children);
+    setup.parentNode.classList.add("setup-armed");
+
+    var still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var strike = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        strike.unobserve(e.target);
+        lines.forEach(function (li, i) {
+          setTimeout(function () { li.classList.add("is-struck"); }, still ? 0 : i * 260);
+        });
+      });
+    }, { threshold: 0.6 });
+
+    strike.observe(setup);
+  }
 })();
