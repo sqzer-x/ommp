@@ -88,11 +88,27 @@ a:hover { color: var(--cyan); }
 .hero {
   position: relative;
   padding-block: clamp(3rem, 8vw, 6rem) 0;
-  /* The splash screen's scattered-note field, reduced to two soft washes. */
-  background:
-    radial-gradient(60rem 32rem at 18% -8%, #3C145055, transparent 70%),
-    radial-gradient(52rem 30rem at 88% 4%,  #143C5055, transparent 70%);
+  background-color: var(--bg);
 }
+
+/* The splash screen, as the page opens on. ommp scatters music notes across a
+   dark field while it loads (about_modal.rs, render_splash_screen); the tile is
+   that same scatter, generated from the same hash by tools/note-field.py. It
+   fades out before the screenshot so the two are never competing. */
+.hero::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 32rem at 18% -8%, #3C145066, transparent 70%),
+    radial-gradient(52rem 30rem at 88% 4%,  #143C5066, transparent 70%),
+    url("../img/note-field.png") repeat;
+  background-size: auto, auto, 370px 740px;
+  -webkit-mask-image: linear-gradient(#000 48%, #0000 88%);
+          mask-image: linear-gradient(#000 48%, #0000 88%);
+}
+.hero-in, .shot-hero { position: relative; z-index: 1; }
+
 .hero-in { text-align: center; }
 
 .hero-logo {
@@ -160,7 +176,6 @@ a:hover { color: var(--cyan); }
   margin: clamp(3rem, 7vw, 5rem) auto 0;
 }
 .shot-hero img { box-shadow: 0 2rem 5rem -1.5rem #00000099; }
-.shot-detail img { box-shadow: 0 1.5rem 4rem -2rem #00000099; }
 
 /* ── Bands ────────────────────────────────────────────────────────── */
 
@@ -217,18 +232,15 @@ a:hover { color: var(--cyan); }
 
 /* ── Split sections ───────────────────────────────────────────────── */
 
-/* Copy beside its list, and the screenshot underneath at the full width of the
-   wrap. These shots are close-ups of a modal whose contents are a fixed number
-   of characters — squeezed into a column beside the copy they are simply too
-   small to read, which defeats the point of showing them. */
-.split {
-  display: grid; gap: clamp(2rem, 5vw, 3.5rem); align-items: start;
-  margin-bottom: clamp(2.25rem, 4vw, 3rem);
-}
+/* Copy in a fixed column, screenshot in the rest. The hero shot is the one that
+   earns full width; from here down the screenshots illustrate a point the copy
+   is already making, and blowing them up to fill the page only pushes the
+   reader further from it. */
+.split { display: grid; gap: clamp(2rem, 5vw, 3.5rem); align-items: center; }
 @media (min-width: 56rem) {
-  .split { grid-template-columns: 1fr minmax(16rem, 22rem); }
+  .split { grid-template-columns: 22rem 1fr; }
+  .split-reverse .split-text { order: 2; }
 }
-.split-text .sec-lede { margin-bottom: 0; }
 
 .filters { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
 .filters code {
