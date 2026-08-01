@@ -151,13 +151,12 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
                             }
                         }
                     }
-                    KeyCode::Char('r') => {
-                        if !app.playlists.is_empty() {
+                    KeyCode::Char('r')
+                        if !app.playlists.is_empty() => {
                             ui.playlist_modal_mode = PlaylistModalMode::Rename;
                             ui.playlist_modal_input =
                                 app.playlists[ui.playlist_modal_selected].name.clone();
                         }
-                    }
                     _ => {}
                 }
             }
@@ -468,13 +467,12 @@ pub fn handle_mouse_event(
                 if in_results && !ui.search_modal_results.is_empty() {
                     let clicked = ui.search_modal_scroll + (y - ra.y) as usize;
                     if clicked < ui.search_modal_results.len() {
-                        // Double-click detection
-                        let is_double = if let Some((last_time, _lx, ly)) = ui.last_click {
-                            last_time.elapsed() < Duration::from_millis(400) && ly == y
+                        let is_double = is_double_click(ui.last_click, x, y);
+                        ui.last_click = if is_double {
+                            None
                         } else {
-                            false
+                            Some((Instant::now(), x, y))
                         };
-                        ui.last_click = Some((Instant::now(), x, y));
 
                         if is_double {
                             // Double-click: select and confirm (add to queue)
@@ -501,11 +499,10 @@ pub fn handle_mouse_event(
                     }
                 }
             }
-            MouseEventKind::ScrollUp => {
-                if in_results && ui.search_modal_scroll > 0 {
+            MouseEventKind::ScrollUp
+                if in_results && ui.search_modal_scroll > 0 => {
                     ui.search_modal_scroll -= 1;
                 }
-            }
             _ => {}
         }
         return actions;
@@ -517,38 +514,24 @@ pub fn handle_mouse_event(
     }
 
     // Determine which pane the mouse is in
-    let in_library = x >= areas.library.x
-        && x < areas.library.x + areas.library.width
-        && y >= areas.library.y
-        && y < areas.library.y + areas.library.height;
-
-    let in_playlist = x >= areas.playlist.x
-        && x < areas.playlist.x + areas.playlist.width
-        && y >= areas.playlist.y
-        && y < areas.playlist.y + areas.playlist.height;
-
-    let in_lyrics = x >= areas.lyrics.x
-        && x < areas.lyrics.x + areas.lyrics.width
-        && y >= areas.lyrics.y
-        && y < areas.lyrics.y + areas.lyrics.height;
+    let hit = PaneHit::at(&areas, x, y);
+    let in_library = hit.library;
+    let in_playlist = hit.playlist;
+    let in_lyrics = hit.lyrics;
 
     // --- Hover tracking (runs on every mouse event including Moved) ---
     update_hover(ui, &areas, app, x, y, in_library, in_playlist);
+    update_tab_hover(ui, &areas, x, y);
 
-    // --- Tab hover highlight ---
-    if y >= areas.tab_bar.y && y < areas.tab_bar.y + areas.tab_bar.height {
-        ui.hovered_tab = tab_bar::tab_hit_test(areas.tab_bar, x);
-    } else {
-        ui.hovered_tab = None;
-    }
-
-    // --- Focus switching on hover (any mouse event in a pane) ---
-    if in_library && app.focus != FocusedPane::Library {
-        actions.push(AppAction::FocusPane(FocusedPane::Library));
-    } else if in_playlist && app.focus != FocusedPane::Playlist {
-        actions.push(AppAction::FocusPane(FocusedPane::Playlist));
-    } else if in_lyrics && app.focus != FocusedPane::Lyrics {
-        actions.push(AppAction::FocusPane(FocusedPane::Lyrics));
+    // Focus follows the click, not the pointer. Deriving it from hover meant a
+    // scroll — or a tick replaying the last known position — immediately undid
+    // Tab, and undid the auto-focus after adding to the queue.
+    if matches!(mouse.kind, MouseEventKind::Down(MouseButton::Left)) {
+        if let Some(pane) = hit.pane() {
+            if app.focus != pane {
+                actions.push(AppAction::FocusPane(pane));
+            }
+        }
     }
 
     // --- Border drag resize ---
@@ -632,13 +615,17 @@ pub fn handle_mouse_event(
                 }
             }
 
-            // Double-click detection
-            let is_double_click = if let Some((last_time, _last_col, last_row)) = ui.last_click {
-                last_time.elapsed() < Duration::from_millis(400) && last_row == y
+            // Double-click detection. The column has to match too: comparing
+            // only the row made a click in the library followed by a click on
+            // the same screen row of the queue register as a double-click.
+            let is_double_click = is_double_click(ui.last_click, x, y);
+            // Cleared once it fires, so three fast clicks are one double-click
+            // and one single, not two doubles.
+            ui.last_click = if is_double_click {
+                None
             } else {
-                false
+                Some((Instant::now(), x, y))
             };
-            ui.last_click = Some((Instant::now(), x, y));
 
             // Tab bar click
             if y >= areas.tab_bar.y && y < areas.tab_bar.y + areas.tab_bar.height {
@@ -673,8 +660,16 @@ pub fn handle_mouse_event(
                 }
             }
 
-            // Single click in library → select + activate (Enter)
-            if in_library {
+            // Single click in library → select + activate (Enter).
+            // Only when the click actually landed on a row: the synthesized
+            // Enter is unconditional, so a click on the border or the blank
+            // space under a short list used to activate whatever was selected
+            // before — which with a queue-replacing activation meant one stray
+            // click wiped the queue.
+            let clicked_library_row = clicked_row_in(areas.library, y)
+                .map(|row| ui.library_pane_scroll(app) + row)
+                .filter(|&row| row < library_row_count(app, ui));
+            if in_library && clicked_library_row.is_some() {
                 // First, route mouse to pane for selection update
                 let _sel_action = match app.tab {
                     Tab::Queue => ui.library_pane.handle_mouse(mouse, areas.library, app),
@@ -754,6 +749,77 @@ pub fn handle_mouse_event(
     actions
 }
 
+const DOUBLE_CLICK: Duration = Duration::from_millis(400);
+
+/// Row index under `y` inside a bordered pane, or None for the border itself.
+fn clicked_row_in(area: ratatui::layout::Rect, y: u16) -> Option<usize> {
+    let inner = ratatui::widgets::Block::default()
+        .borders(ratatui::widgets::Borders::ALL)
+        .inner(area);
+    (y >= inner.y && y < inner.y + inner.height).then(|| (y - inner.y) as usize)
+}
+
+/// How many rows the library pane is currently showing, so a click below the
+/// last one can be ignored instead of activating whatever was selected before.
+fn library_row_count(app: &App, ui: &Ui) -> usize {
+    match app.tab {
+        Tab::Queue => ui.library_pane.row_count(app),
+        Tab::Directories => ui.dir_browser_pane.entries.len(),
+        Tab::Artists => app.library.get_artists().len(),
+        Tab::Albums => app.library.get_albums().len(),
+        Tab::Genre => app.library.get_genres().len(),
+        Tab::Format => app.library.get_formats().len(),
+        Tab::Playlists => app.playlists.len(),
+    }
+}
+
+/// A second click counts only if it lands on the same cell in time. Matching on
+/// the row alone let a click in one pane pair up with a click in another.
+fn is_double_click(last: Option<(Instant, u16, u16)>, x: u16, y: u16) -> bool {
+    last.is_some_and(|(at, lx, ly)| lx == x && ly == y && at.elapsed() < DOUBLE_CLICK)
+}
+
+/// Which dashboard pane a point lands in. Both the mouse handler and the tick
+/// refresh need this; they used to carry byte-identical copies of the maths.
+struct PaneHit {
+    library: bool,
+    playlist: bool,
+    lyrics: bool,
+}
+
+impl PaneHit {
+    fn at(areas: &LayoutAreas, x: u16, y: u16) -> Self {
+        let inside = |r: ratatui::layout::Rect| {
+            x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height
+        };
+        Self {
+            library: inside(areas.library),
+            playlist: inside(areas.playlist),
+            lyrics: inside(areas.lyrics),
+        }
+    }
+
+    fn pane(&self) -> Option<FocusedPane> {
+        if self.library {
+            Some(FocusedPane::Library)
+        } else if self.playlist {
+            Some(FocusedPane::Playlist)
+        } else if self.lyrics {
+            Some(FocusedPane::Lyrics)
+        } else {
+            None
+        }
+    }
+}
+
+fn update_tab_hover(ui: &mut Ui, areas: &LayoutAreas, x: u16, y: u16) {
+    ui.hovered_tab = if y >= areas.tab_bar.y && y < areas.tab_bar.y + areas.tab_bar.height {
+        tab_bar::tab_hit_test(areas.tab_bar, x)
+    } else {
+        None
+    };
+}
+
 /// Clear all hover_row state across all panes
 fn clear_all_hovers(ui: &mut Ui) {
     ui.queue_pane.hover_row = None;
@@ -794,8 +860,13 @@ fn update_hover(
         let block = ratatui::widgets::Block::default()
             .borders(ratatui::widgets::Borders::ALL);
         let inner = block.inner(areas.library);
+        // Bounded like the queue branch above: hovering the blank space below a
+        // short list used to light up a row that isn't there.
+        let row_count = library_row_count(app, ui);
+        let scroll = ui.library_pane_scroll(app);
         if x >= inner.x && x < inner.x + inner.width
             && y >= inner.y && y < inner.y + inner.height
+            && (scroll + (y - inner.y) as usize) < row_count
         {
             let visual_row = (y - inner.y) as usize;
             match app.tab {
@@ -832,48 +903,23 @@ fn update_hover(
     }
 }
 
-/// Refresh hover state from the stored mouse position.
-/// Call this on Tick events so hover stays updated even without Moved events.
-/// Returns a focus action if the mouse is over a different pane.
-pub fn refresh_hover(app: &App, ui: &mut Ui, terminal_area: ratatui::layout::Rect) -> Vec<AppAction> {
-    let mut actions = Vec::new();
+/// Refresh row highlighting from the stored mouse position, so hover stays
+/// current on terminals that only report motion sporadically.
+///
+/// This deliberately does not touch focus. It used to re-derive focus from
+/// `ui.mouse_pos` on every 200ms tick, and since that position is latched on the
+/// first mouse event and never cleared, pressing Tab moved focus for one frame
+/// before the next tick dragged it back under the pointer.
+pub fn refresh_hover(app: &App, ui: &mut Ui, terminal_area: ratatui::layout::Rect) {
     // Skip hover updates when any modal is open
     if ui.show_about_modal || ui.show_help_modal || ui.show_search_modal || ui.show_playlist_modal {
-        return actions;
+        return;
     }
-    if let Some((x, y)) = ui.mouse_pos {
-        let areas = LayoutAreas::compute(terminal_area, ui.pane_widths, ui.right_split);
-        let in_library = x >= areas.library.x
-            && x < areas.library.x + areas.library.width
-            && y >= areas.library.y
-            && y < areas.library.y + areas.library.height;
-        let in_playlist = x >= areas.playlist.x
-            && x < areas.playlist.x + areas.playlist.width
-            && y >= areas.playlist.y
-            && y < areas.playlist.y + areas.playlist.height;
-        let in_lyrics = x >= areas.lyrics.x
-            && x < areas.lyrics.x + areas.lyrics.width
-            && y >= areas.lyrics.y
-            && y < areas.lyrics.y + areas.lyrics.height;
-        update_hover(ui, &areas, app, x, y, in_library, in_playlist);
-
-        // Tab hover highlight
-        if y >= areas.tab_bar.y && y < areas.tab_bar.y + areas.tab_bar.height {
-            ui.hovered_tab = tab_bar::tab_hit_test(areas.tab_bar, x);
-        } else {
-            ui.hovered_tab = None;
-        }
-
-        // Focus switching on hover
-        if in_library && app.focus != FocusedPane::Library {
-            actions.push(AppAction::FocusPane(FocusedPane::Library));
-        } else if in_playlist && app.focus != FocusedPane::Playlist {
-            actions.push(AppAction::FocusPane(FocusedPane::Playlist));
-        } else if in_lyrics && app.focus != FocusedPane::Lyrics {
-            actions.push(AppAction::FocusPane(FocusedPane::Lyrics));
-        }
-    }
-    actions
+    let Some((x, y)) = ui.mouse_pos else { return };
+    let areas = LayoutAreas::compute(terminal_area, ui.pane_widths, ui.right_split);
+    let hit = PaneHit::at(&areas, x, y);
+    update_hover(ui, &areas, app, x, y, hit.library, hit.playlist);
+    update_tab_hover(ui, &areas, x, y);
 }
 
 /// Resize the focused pane by delta percentage points.
@@ -930,11 +976,10 @@ pub fn update_queue_selection(app: &mut App, key: KeyEvent) {
                 app.queue.selected_index += 1;
             }
         }
-        KeyCode::Char('k') | KeyCode::Up => {
-            if app.queue.selected_index > 0 {
+        KeyCode::Char('k') | KeyCode::Up
+            if app.queue.selected_index > 0 => {
                 app.queue.selected_index -= 1;
             }
-        }
         _ => {}
     }
 }

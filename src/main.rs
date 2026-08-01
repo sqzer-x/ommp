@@ -221,9 +221,17 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                         }
                     }
                     Event::Mouse(mouse) => {
-                        let size = terminal.size().unwrap_or_default();
-                        let area = ratatui::layout::Rect::new(0, 0, size.width, size.height);
-                        handler::handle_mouse_event(mouse, &app, &mut ui, area)
+                        // Keys are ignored during the splash; mouse events were
+                        // not, so clicks landed on an invisible UI — switching
+                        // tabs, seeking, and replacing the queue.
+                        if ui.show_splash {
+                            vec![]
+                        } else {
+                            let size = terminal.size().unwrap_or_default();
+                            let area =
+                                ratatui::layout::Rect::new(0, 0, size.width, size.height);
+                            handler::handle_mouse_event(mouse, &app, &mut ui, area)
+                        }
                     }
                     Event::Resize(_, _) => {
                         vec![] // Will re-render on next loop
@@ -241,7 +249,8 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                         // Refresh hover from stored mouse position
                         let size = terminal.size().unwrap_or_default();
                         let area = ratatui::layout::Rect::new(0, 0, size.width, size.height);
-                        handler::refresh_hover(&app, &mut ui, area)
+                        handler::refresh_hover(&app, &mut ui, area);
+                        vec![]
                     }
                     Event::LibraryReady(new_lib) => {
                         app.replace_library(new_lib);

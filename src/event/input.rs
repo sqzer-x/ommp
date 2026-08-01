@@ -21,11 +21,10 @@ pub fn spawn_input_thread(tx: Sender<Event>) -> std::thread::JoinHandle<()> {
                             break;
                         }
                     }
-                    Ok(CtEvent::Resize(w, h)) => {
-                        if tx.send(Event::Resize(w, h)).is_err() {
+                    Ok(CtEvent::Resize(w, h))
+                        if tx.send(Event::Resize(w, h)).is_err() => {
                             break;
                         }
-                    }
                     _ => {}
                 }
             }

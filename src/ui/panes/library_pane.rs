@@ -39,6 +39,12 @@ impl LibraryPane {
         }
     }
 
+    /// Rows currently on offer, so callers can tell a click on a row from a
+    /// click on the blank space below the list.
+    pub fn row_count(&self, app: &App) -> usize {
+        Self::build_entries(app).len()
+    }
+
     fn build_entries(app: &App) -> Vec<LibraryEntry> {
         let mut entries = Vec::new();
 

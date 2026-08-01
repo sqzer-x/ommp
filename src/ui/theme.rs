@@ -25,8 +25,11 @@ impl Default for Theme {
         Self {
             bg: Color::Reset,
             fg: Color::White,
-            border_focused: Color::Cyan,
-            border_unfocused: Color::Cyan,
+            // These were both Cyan, which made the focus indicator a no-op:
+            // every pane picked a border colour from `focused` and got the same
+            // answer, so there was no way to see where focus was.
+            border_focused: Color::Rgb(100, 220, 255),
+            border_unfocused: Color::Rgb(70, 80, 95),
             highlight_bg: Color::Cyan,
             highlight_fg: Color::Black,
             tab_active: Style::default()

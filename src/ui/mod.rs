@@ -237,6 +237,19 @@ impl Ui {
         }
     }
 
+    /// Scroll offset of whichever pane the library column is currently showing.
+    pub fn library_pane_scroll(&self, app: &App) -> usize {
+        match app.tab {
+            Tab::Queue => self.library_pane.scroll_offset,
+            Tab::Directories => self.dir_browser_pane.scroll_offset,
+            Tab::Artists => self.artists_pane.scroll_offset,
+            Tab::Albums => self.albums_pane.scroll_offset,
+            Tab::Genre => self.genre_pane.scroll_offset,
+            Tab::Format => self.format_pane.scroll_offset,
+            Tab::Playlists => self.playlists_pane.scroll_offset,
+        }
+    }
+
     pub fn refresh_dir_browser(&mut self, app: &App) {
         self.dir_browser_pane.refresh(app);
     }
