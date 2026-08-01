@@ -9,7 +9,19 @@ use crate::app::state::{PlayState, SyncState};
 use crate::ui::theme::Theme;
 
 pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme, resize_mode: bool) {
-    let block = if resize_mode {
+    let block = if let Some(err) = &app.audio_error {
+        // Nothing will ever play; without this the UI shows a play state and a
+        // moving progress bar over silence.
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Rgb(255, 90, 90)))
+            .title(format!(" [NO AUDIO] {} ", err))
+            .title_style(
+                Style::default()
+                    .fg(Color::Rgb(255, 90, 90))
+                    .add_modifier(Modifier::BOLD),
+            )
+    } else if resize_mode {
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Yellow))

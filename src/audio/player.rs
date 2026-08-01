@@ -50,11 +50,20 @@ impl AudioEngine {
     }
 }
 
+/// One flat loop over every command, with the sink and the playback clock held
+/// as plain locals.
+///
+/// This used to be two loops: an idle one that matched only Play and Stop and
+/// threw the rest away (`Ok(_) => {}`), and a playing one that recursed into
+/// itself on every track change. That cost a stack frame and a still-connected
+/// `Sink` per track, and — because volume lived only inside the playing loop —
+/// every track that ended on its own started the next one at rodio's default
+/// full volume.
 fn player_thread(cmd_rx: Receiver<PlayerCommand>, event_tx: Sender<Event>) {
     let stream = match OutputStreamBuilder::open_default_stream() {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("Failed to open audio output: {}", e);
+            let _ = event_tx.send(Event::Audio(AudioEvent::DeviceError(e.to_string())));
             return;
         }
     };
@@ -62,37 +71,120 @@ fn player_thread(cmd_rx: Receiver<PlayerCommand>, event_tx: Sender<Event>) {
     let mixer = stream.mixer().clone();
     let position_ticker = tick(Duration::from_millis(250));
 
+    let mut sink: Option<Sink> = None;
+    // Survives across tracks and idle periods; applied to every sink we build.
+    let mut volume: f32 = 1.0;
+    let mut duration: f64 = 0.0;
+    let mut play_start: Option<Instant> = None;
+    let mut accumulated_secs: f64 = 0.0;
+    let mut is_paused = false;
+
     loop {
         select! {
             recv(cmd_rx) -> msg => {
                 match msg {
                     Ok(PlayerCommand::Play(path)) => {
-                        match open_and_play(&mixer, &path) {
-                            Ok((sink, duration)) => {
+                        if let Some(old) = sink.take() {
+                            old.stop();
+                        }
+                        accumulated_secs = 0.0;
+                        is_paused = false;
+                        match open_and_play(&mixer, &path, volume) {
+                            Ok((new_sink, new_duration)) => {
+                                sink = Some(new_sink);
+                                duration = new_duration;
+                                play_start = Some(Instant::now());
                                 let _ = event_tx.send(Event::Audio(AudioEvent::Playing));
-                                run_playback_loop(
-                                    sink, &mixer, &cmd_rx, &event_tx,
-                                    &position_ticker, duration,
-                                );
                             }
                             Err(e) => {
+                                duration = 0.0;
+                                play_start = None;
                                 let _ = event_tx.send(Event::Audio(AudioEvent::TrackError(e)));
                             }
                         }
                     }
+                    Ok(PlayerCommand::Pause) => {
+                        if let Some(ref s) = sink {
+                            if !is_paused {
+                                s.pause();
+                                if let Some(start) = play_start.take() {
+                                    accumulated_secs += start.elapsed().as_secs_f64();
+                                }
+                                is_paused = true;
+                                let _ = event_tx.send(Event::Audio(AudioEvent::Paused));
+                            }
+                        }
+                    }
+                    Ok(PlayerCommand::Resume) => {
+                        if let Some(ref s) = sink {
+                            if is_paused {
+                                s.play();
+                                play_start = Some(Instant::now());
+                                is_paused = false;
+                                let _ = event_tx.send(Event::Audio(AudioEvent::Playing));
+                            }
+                        }
+                    }
                     Ok(PlayerCommand::Stop) => {
+                        if let Some(old) = sink.take() {
+                            old.stop();
+                        }
+                        play_start = None;
+                        accumulated_secs = 0.0;
+                        is_paused = false;
                         let _ = event_tx.send(Event::Audio(AudioEvent::Stopped));
                     }
-                    Ok(_) => {}
+                    Ok(PlayerCommand::SetVolume(vol)) => {
+                        // Remembered even with nothing playing, so the volume
+                        // restored at startup applies to the first track.
+                        volume = vol.clamp(0.0, 1.0);
+                        if let Some(ref s) = sink {
+                            s.set_volume(volume);
+                        }
+                    }
+                    Ok(PlayerCommand::Seek(secs)) => {
+                        if let Some(ref s) = sink {
+                            if s.try_seek(Duration::from_secs_f64(secs)).is_ok() {
+                                accumulated_secs = secs;
+                                if !is_paused {
+                                    play_start = Some(Instant::now());
+                                }
+                            }
+                        }
+                    }
                     Err(_) => break,
                 }
             }
-            recv(position_ticker) -> _ => {}
+            recv(position_ticker) -> _ => {
+                let finished = sink.as_ref().is_some_and(|s| s.empty()) && !is_paused;
+                if finished {
+                    sink = None;
+                    play_start = None;
+                    accumulated_secs = 0.0;
+                    let _ = event_tx.send(Event::Audio(AudioEvent::TrackFinished));
+                } else if sink.is_some() {
+                    let pos = if is_paused {
+                        accumulated_secs
+                    } else if let Some(start) = play_start {
+                        accumulated_secs + start.elapsed().as_secs_f64()
+                    } else {
+                        accumulated_secs
+                    };
+                    // Only clamp when the decoder actually reported a length —
+                    // VBR MP3s without a Xing header give 0.0, and clamping to
+                    // that pins the elapsed time at 0:00 for the whole track.
+                    let position_secs = if duration > 0.0 { pos.min(duration) } else { pos };
+                    let _ = event_tx.send(Event::Audio(AudioEvent::PositionUpdate {
+                        position_secs,
+                        duration_secs: duration,
+                    }));
+                }
+            }
         }
     }
 }
 
-fn open_and_play(mixer: &Mixer, path: &PathBuf) -> Result<(Sink, f64), String> {
+fn open_and_play(mixer: &Mixer, path: &PathBuf, volume: f32) -> Result<(Sink, f64), String> {
     let ext = path
         .extension()
         .and_then(|e| e.to_str())
@@ -106,10 +198,7 @@ fn open_and_play(mixer: &Mixer, path: &PathBuf) -> Result<(Sink, f64), String> {
             let duration = Source::total_duration(&source)
                 .map(|d| d.as_secs_f64())
                 .unwrap_or(0.0);
-            let sink = Sink::connect_new(mixer);
-            sink.append(source);
-            sink.play();
-            return Ok((sink, duration));
+            return Ok((start_sink(mixer, source, volume), duration));
         }
     }
 
@@ -127,19 +216,30 @@ fn open_and_play(mixer: &Mixer, path: &PathBuf) -> Result<(Sink, f64), String> {
             let duration = Source::total_duration(&source)
                 .map(|d| d.as_secs_f64())
                 .unwrap_or(0.0);
-            let sink = Sink::connect_new(mixer);
-            sink.append(source);
-            sink.play();
-            return Ok((sink, duration));
+            return Ok((start_sink(mixer, source, volume), duration));
         }
     }
 
     // Fall back to symphonia direct decoding for m4a/mp4/etc
-    decode_with_symphonia(mixer, path)
+    decode_with_symphonia(mixer, path, volume)
+}
+
+/// Build a playing sink at the player's current volume. A fresh `Sink` starts at
+/// rodio's default 1.0, so skipping the `set_volume` here is what made every
+/// naturally-ended track hand off to the next one at full blast.
+fn start_sink<S>(mixer: &Mixer, source: S, volume: f32) -> Sink
+where
+    S: Source + Send + 'static,
+{
+    let sink = Sink::connect_new(mixer);
+    sink.set_volume(volume);
+    sink.append(source);
+    sink.play();
+    sink
 }
 
 /// Decode using symphonia directly, buffer the entire track, and play via rodio Sink.
-fn decode_with_symphonia(mixer: &Mixer, path: &Path) -> Result<(Sink, f64), String> {
+fn decode_with_symphonia(mixer: &Mixer, path: &Path, volume: f32) -> Result<(Sink, f64), String> {
     let file = File::open(path).map_err(|e| format!("Open: {}", e))?;
     let mss = MediaSourceStream::new(Box::new(file), Default::default());
 
@@ -222,102 +322,5 @@ fn decode_with_symphonia(mixer: &Mixer, path: &Path) -> Result<(Sink, f64), Stri
         .map(|d| d.as_secs_f64())
         .unwrap_or(duration_secs);
 
-    let sink = Sink::connect_new(mixer);
-    sink.append(buffer);
-    sink.play();
-    Ok((sink, actual_duration))
-}
-
-fn run_playback_loop(
-    sink: Sink,
-    mixer: &Mixer,
-    cmd_rx: &Receiver<PlayerCommand>,
-    event_tx: &Sender<Event>,
-    position_ticker: &Receiver<Instant>,
-    mut duration: f64,
-) {
-    let mut play_start: Option<Instant> = Some(Instant::now());
-    let mut accumulated_secs: f64 = 0.0;
-    let mut is_paused = false;
-
-    loop {
-        select! {
-            recv(cmd_rx) -> msg => {
-                match msg {
-                    Ok(PlayerCommand::Play(path)) => {
-                        sink.stop();
-                        match open_and_play(mixer, &path) {
-                            Ok((new_sink, new_dur)) => {
-                                new_sink.set_volume(sink.volume());
-                                duration = new_dur;
-                                let _ = event_tx.send(Event::Audio(AudioEvent::Playing));
-                                run_playback_loop(
-                                    new_sink, mixer, cmd_rx, event_tx,
-                                    position_ticker, duration,
-                                );
-                            }
-                            Err(e) => {
-                                let _ = event_tx.send(Event::Audio(AudioEvent::TrackError(e)));
-                            }
-                        }
-                        return;
-                    }
-                    Ok(PlayerCommand::Pause) => {
-                        if !is_paused {
-                            sink.pause();
-                            if let Some(start) = play_start.take() {
-                                accumulated_secs += start.elapsed().as_secs_f64();
-                            }
-                            is_paused = true;
-                            let _ = event_tx.send(Event::Audio(AudioEvent::Paused));
-                        }
-                    }
-                    Ok(PlayerCommand::Resume) => {
-                        if is_paused {
-                            sink.play();
-                            play_start = Some(Instant::now());
-                            is_paused = false;
-                            let _ = event_tx.send(Event::Audio(AudioEvent::Playing));
-                        }
-                    }
-                    Ok(PlayerCommand::Stop) => {
-                        sink.stop();
-                        let _ = event_tx.send(Event::Audio(AudioEvent::Stopped));
-                        return;
-                    }
-                    Ok(PlayerCommand::SetVolume(vol)) => {
-                        sink.set_volume(vol);
-                    }
-                    Ok(PlayerCommand::Seek(secs)) => {
-                        if sink.try_seek(Duration::from_secs_f64(secs)).is_ok() {
-                            accumulated_secs = secs;
-                            if !is_paused {
-                                play_start = Some(Instant::now());
-                            }
-                        }
-                    }
-                    Err(_) => return,
-                }
-            }
-            recv(position_ticker) -> _ => {
-                if sink.empty() && !is_paused {
-                    let _ = event_tx.send(Event::Audio(AudioEvent::TrackFinished));
-                    return;
-                }
-
-                let pos = if is_paused {
-                    accumulated_secs
-                } else if let Some(start) = play_start {
-                    accumulated_secs + start.elapsed().as_secs_f64()
-                } else {
-                    accumulated_secs
-                };
-
-                let _ = event_tx.send(Event::Audio(AudioEvent::PositionUpdate {
-                    position_secs: pos.min(duration),
-                    duration_secs: duration,
-                }));
-            }
-        }
-    }
+    Ok((start_sink(mixer, buffer, volume), actual_duration))
 }

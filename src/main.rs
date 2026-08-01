@@ -131,7 +131,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                                 app.library = lib;
                                 // Load all tracks into queue by default
                                 let all_indices: Vec<usize> = (0..app.library.tracks.len()).collect();
-                                app.handle_action(app::AppAction::AddToQueue(all_indices));
+                                app.handle_action(app::AppAction::ReplaceQueue(all_indices));
                                 ui.refresh_dir_browser(&app);
 
                                 // Restore persisted state
@@ -263,12 +263,15 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                                 duration_secs,
                             }],
                             AudioEvent::TrackFinished => vec![app::AppAction::TrackFinished],
-                            AudioEvent::TrackError(_) => {
-                                // Skip to next track on decode error
-                                vec![app::AppAction::NextTrack]
+                            AudioEvent::TrackError(_) => vec![app::AppAction::TrackFailed],
+                            AudioEvent::DeviceError(msg) => {
+                                app.audio_error = Some(msg);
+                                app.playback.state = app::state::PlayState::Stopped;
+                                vec![]
                             }
                             AudioEvent::Playing => {
                                 app.playback.state = app::state::PlayState::Playing;
+                                app.note_playback_started();
                                 vec![]
                             }
                             AudioEvent::Paused => {

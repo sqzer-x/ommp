@@ -149,6 +149,13 @@ pub struct QueueState {
     pub current_index: Option<usize>,
     pub selected_index: usize,
     pub scroll_offset: usize,
+    /// Positions into `tracks`, in shuffled play order — a real permutation, so
+    /// a shuffled pass reaches every track exactly once and can end. Empty while
+    /// shuffle is off.
+    pub shuffle_order: Vec<usize>,
+    /// How far into `shuffle_order` playback has got. Also what makes "previous"
+    /// mean the previous shuffled track rather than the previous queue row.
+    pub shuffle_pos: usize,
 }
 
 #[derive(Debug, Clone)]
