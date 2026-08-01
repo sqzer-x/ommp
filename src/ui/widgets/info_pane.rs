@@ -7,18 +7,21 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::Frame;
 
+use lofty::file::TaggedFileExt;
+use lofty::picture::{Picture, PictureType};
 use ratatui_image::picker::Picker;
 use ratatui_image::protocol::StatefulProtocol;
 use ratatui_image::StatefulImage;
 
 use crate::app::state::InfoView;
 use crate::app::App;
+use crate::library::track::Track;
 use crate::ui::theme::Theme;
 
 // ── AlbumArtCache ────────────────────────────────────────────────────────
 
 pub struct AlbumArtCache {
-    track_dir: Option<PathBuf>,
+    track_path: Option<PathBuf>,
     picker: Picker,
     protocol: Option<StatefulProtocol>,
 }
@@ -26,37 +29,23 @@ pub struct AlbumArtCache {
 impl AlbumArtCache {
     pub fn new(picker: Picker) -> Self {
         Self {
-            track_dir: None,
+            track_path: None,
             picker,
             protocol: None,
         }
     }
 
-    fn needs_reload(&self, dir: Option<&Path>) -> bool {
-        match (&self.track_dir, dir) {
-            (Some(a), Some(b)) => a != b,
-            (None, None) => false,
-            _ => true,
-        }
+    fn needs_reload(&self, path: Option<&Path>) -> bool {
+        self.track_path.as_deref() != path
     }
 
-    fn load(&mut self, dir: Option<&Path>) {
-        self.track_dir = dir.map(|d| d.to_path_buf());
+    fn load(&mut self, path: Option<&Path>) {
+        self.track_path = path.map(|p| p.to_path_buf());
         self.protocol = None;
 
-        let dir = match dir {
-            Some(d) => d,
+        let img = match path.and_then(embedded_cover) {
+            Some(i) => i,
             None => return,
-        };
-
-        let cover_path = match find_cover_image(dir) {
-            Some(p) => p,
-            None => return,
-        };
-
-        let img = match image::open(&cover_path) {
-            Ok(i) => i,
-            Err(_) => return,
         };
 
         // StatefulProtocol handles resizing automatically per-frame
@@ -64,49 +53,22 @@ impl AlbumArtCache {
     }
 }
 
-fn find_cover_image(dir: &Path) -> Option<PathBuf> {
-    let entries = std::fs::read_dir(dir).ok()?;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if !path.is_file() {
-            continue;
-        }
-        // Check extension first (fast path)
-        if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-            let l = ext.to_ascii_lowercase();
-            if l == "jpg" || l == "jpeg" || l == "png" {
-                return Some(path);
-            }
-        }
-        // No extension or unknown ext — check magic bytes
-        if is_image_by_magic(&path) {
-            return Some(path);
-        }
-    }
-    None
+/// Decode the cover art embedded in the audio file itself.
+fn embedded_cover(path: &Path) -> Option<image::DynamicImage> {
+    let tagged_file = lofty::read_from_path(path).ok()?;
+    let tag = tagged_file
+        .primary_tag()
+        .or_else(|| tagged_file.first_tag())?;
+    let picture = pick_cover(tag.pictures())?;
+    image::load_from_memory(picture.data()).ok()
 }
 
-/// Check file header bytes to detect JPEG/PNG regardless of extension.
-fn is_image_by_magic(path: &Path) -> bool {
-    use std::fs::File;
-    use std::io::Read;
-    let mut f = match File::open(path) {
-        Ok(f) => f,
-        Err(_) => return false,
-    };
-    let mut buf = [0u8; 8];
-    if f.read_exact(&mut buf).is_err() {
-        return false;
-    }
-    // JPEG: FF D8 FF
-    if buf[0] == 0xFF && buf[1] == 0xD8 && buf[2] == 0xFF {
-        return true;
-    }
-    // PNG: 89 50 4E 47 0D 0A 1A 0A
-    if buf == [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] {
-        return true;
-    }
-    false
+/// Prefer the front cover; fall back to whatever picture the file carries.
+fn pick_cover(pictures: &[Picture]) -> Option<&Picture> {
+    pictures
+        .iter()
+        .find(|p| p.pic_type() == PictureType::CoverFront)
+        .or_else(|| pictures.first())
 }
 
 // ── Public render function ───────────────────────────────────────────────
@@ -245,10 +207,10 @@ fn render_album_art(frame: &mut Frame, area: Rect, app: &App, cache: &mut AlbumA
         return;
     }
 
-    let track_dir = app.current_track().and_then(|t| t.path.parent().map(|p| p.to_path_buf()));
+    let track_path = app.current_track().map(|t| t.path.clone());
 
-    if cache.needs_reload(track_dir.as_deref()) {
-        cache.load(track_dir.as_deref());
+    if cache.needs_reload(track_path.as_deref()) {
+        cache.load(track_path.as_deref());
     }
 
     match cache.protocol {
@@ -326,16 +288,21 @@ pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         .map(|b| format!("{} kbps", b))
         .unwrap_or_else(|| "N/A".to_string());
 
-    let track_num_str = track
-        .track_number
-        .map(|n| n.to_string())
-        .unwrap_or_else(|| "N/A".to_string());
+    let track_num_str = Track::format_index(track.track_number, track.track_total);
+    let disc_str = Track::format_index(track.disc_number, track.disc_total);
 
     let duration_str = track.format_duration();
 
+    let na = |s: &str| {
+        if s.is_empty() {
+            "N/A".to_string()
+        } else {
+            s.to_string()
+        }
+    };
 
     // Each field has a unique label color and value style
-    let fields: Vec<(&str, String, Color, Style)> = vec![
+    let mut fields: Vec<(&str, String, Color, Style)> = vec![
         ("Title", track.title.clone(),
             Color::Rgb(100, 180, 255),
             Style::default().fg(Color::Rgb(100, 220, 255)).add_modifier(Modifier::BOLD)),
@@ -345,19 +312,27 @@ pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         ("Album", track.display_album().to_string(),
             Color::Rgb(200, 130, 255),
             Style::default().fg(Color::Rgb(220, 170, 255))),
-        ("Album Artist",
-            if track.album_artist.is_empty() { "N/A".to_string() } else { track.album_artist.clone() },
+        ("Album Artist", na(&track.album_artist),
             Color::Rgb(200, 130, 255),
             Style::default().fg(theme.fg)),
-        ("Genre",
-            if track.genre.is_empty() { "N/A".to_string() } else { track.genre.clone() },
+        ("Genre", na(&track.genre),
             Color::Rgb(255, 120, 150),
             Style::default().fg(Color::Rgb(255, 170, 190))),
+        ("Year",
+            track.year.map(|y| y.to_string()).unwrap_or_else(|| "N/A".to_string()),
+            Color::Rgb(255, 120, 150),
+            Style::default().fg(theme.fg)),
         ("Track #", track_num_str,
+            Color::Rgb(120, 220, 180),
+            Style::default().fg(theme.fg)),
+        ("Disc #", disc_str,
             Color::Rgb(120, 220, 180),
             Style::default().fg(theme.fg)),
         ("Duration", duration_str,
             Color::Rgb(120, 220, 180),
+            Style::default().fg(theme.fg)),
+        ("Quality", track.format_quality(),
+            Color::Rgb(255, 220, 100),
             Style::default().fg(theme.fg)),
         ("Bitrate", bitrate_str,
             Color::Rgb(255, 220, 100),
@@ -366,6 +341,12 @@ pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
             Color::Rgb(255, 220, 100),
             Style::default().fg(theme.fg)),
     ];
+
+    if let Some(comment) = &track.comment {
+        fields.push(("Comment", comment.clone(),
+            Color::Rgb(160, 160, 160),
+            Style::default().fg(Color::Rgb(150, 150, 150))));
+    }
 
     let lines: Vec<Line> = fields
         .iter()
@@ -379,4 +360,27 @@ pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
     let para = Paragraph::new(lines).wrap(Wrap { trim: false });
     frame.render_widget(para, area);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lofty::picture::MimeType;
+
+    fn pic(pic_type: PictureType, data: u8) -> Picture {
+        Picture::new_unchecked(pic_type, Some(MimeType::Jpeg), None, vec![data])
+    }
+
+    #[test]
+    fn cover_front_wins_over_earlier_pictures() {
+        let pictures = [pic(PictureType::CoverBack, 1), pic(PictureType::CoverFront, 2)];
+        assert_eq!(pick_cover(&pictures).unwrap().data(), &[2]);
+    }
+
+    #[test]
+    fn falls_back_to_first_picture_and_handles_none() {
+        let pictures = [pic(PictureType::Artist, 1), pic(PictureType::Band, 2)];
+        assert_eq!(pick_cover(&pictures).unwrap().data(), &[1]);
+        assert!(pick_cover(&[]).is_none());
+    }
 }
