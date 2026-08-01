@@ -39,11 +39,25 @@ Recommended fonts: **JetBrainsMono Nerd Font**, **MesloLGS NF**, **FiraCode Nerd
 
 After installing, set it as your terminal's font.
 
-### Terminal (recommended: Kitty)
+### Terminal
 
-OMMP works in any terminal with true color (24-bit) support, but **[Kitty](https://sw.kovidgoyal.net/kitty/)** is recommended for the best experience — album art is displayed at full quality using Kitty's native image protocol.
+OMMP needs true colour (24-bit) support, which any current terminal has.
 
-Other terminals with Sixel support (foot, WezTerm) also display album art well. Standard terminals fall back to block-character rendering.
+Album art is drawn as a real image in terminals that implement one of the
+graphics protocols OMMP understands — the **Kitty graphics protocol**, **Sixel**,
+or the **iTerm2 inline image protocol**. Which one is in use is detected at
+startup; nothing to configure.
+
+| Protocol | Terminals |
+|----------|-----------|
+| Kitty graphics | [Ghostty](https://ghostty.org/), [Kitty](https://sw.kovidgoyal.net/kitty/), [WezTerm](https://wezterm.org/), Konsole |
+| Sixel | [foot](https://codeberg.org/dnkl/foot), WezTerm, xterm (built with Sixel), Contour |
+| iTerm2 | WezTerm, Konsole |
+
+Anything else falls back to block characters, which still shows the artwork —
+just coarser. Note that GPU acceleration is unrelated: Alacritty is
+GPU-accelerated but implements none of these, while xterm is not and supports
+Sixel.
 
 ### Audio
 
