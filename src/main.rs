@@ -198,9 +198,11 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
             Ok(event) => {
                 let actions = match event {
                     Event::Key(key) => {
-                        // On key press during splash: jump to fade-out phase
+                        // A key during the splash dismisses it outright — the
+                        // hint promises the app, not another half second of
+                        // animation.
                         if ui.show_splash {
-                            ui.begin_splash_fade_out();
+                            ui.dismiss_splash();
                             vec![]
                         } else {
                         // Handle queue selection directly for playlist focus

@@ -135,24 +135,11 @@ impl Ui {
         }
     }
 
-    /// Skip the splash forward to the start of its fade-out, if it has not got
-    /// there already. Only a keypress does this: the timeline is otherwise
-    /// fixed, and the fade-out still plays so the skip is not a hard cut.
-    pub fn begin_splash_fade_out(&mut self) {
-        if !self.show_splash {
-            return;
-        }
-        let Some(start) = self.splash_start else { return };
-        if start.elapsed().as_secs_f32() >= SPLASH_FADE_OUT_AT {
-            return;
-        }
-        // checked_sub because Instant is CLOCK_MONOTONIC: started within
-        // SPLASH_FADE_OUT_AT of boot, plain `-` panics.
-        if let Some(t) = std::time::Instant::now()
-            .checked_sub(std::time::Duration::from_secs_f32(SPLASH_FADE_OUT_AT))
-        {
-            self.splash_start = Some(t);
-        }
+    /// Drop the splash immediately. Only a keypress does this; left alone the
+    /// timeline always runs in full.
+    pub fn dismiss_splash(&mut self) {
+        self.show_splash = false;
+        self.splash_start = None;
     }
 
     pub fn render(&mut self, frame: &mut Frame, app: &App) {
@@ -314,39 +301,23 @@ mod tests {
         )
     }
 
-    fn elapsed(ui: &Ui) -> f32 {
-        ui.splash_start.map(|s| s.elapsed().as_secs_f32()).unwrap_or(0.0)
-    }
-
     #[test]
-    fn a_keypress_skips_the_splash_hold() {
+    fn a_keypress_drops_the_splash_immediately() {
         let mut ui = ui();
         assert!(ui.show_splash);
-        assert!(elapsed(&ui) < SPLASH_FADE_OUT_AT);
 
-        ui.begin_splash_fade_out();
+        ui.dismiss_splash();
 
-        // Straight to the fade-out rather than sitting through the hold.
-        assert!(elapsed(&ui) >= SPLASH_FADE_OUT_AT);
-        assert!(elapsed(&ui) < SPLASH_END, "the fade-out still plays");
-    }
-
-    #[test]
-    fn skipping_twice_does_not_cut_the_fade_out_short() {
-        let mut ui = ui();
-        ui.begin_splash_fade_out();
-        let first = elapsed(&ui);
-        ui.begin_splash_fade_out();
-        assert!(elapsed(&ui) >= first, "must not jump past the end");
-        assert!(elapsed(&ui) < SPLASH_END);
-    }
-
-    #[test]
-    fn skipping_a_dismissed_splash_is_a_no_op() {
-        let mut ui = ui();
-        ui.show_splash = false;
-        ui.splash_start = None;
-        ui.begin_splash_fade_out();
+        // No trailing fade: the hint says the key skips to the app.
+        assert!(!ui.show_splash);
         assert!(ui.splash_start.is_none());
+    }
+
+    #[test]
+    fn dismissing_twice_is_harmless() {
+        let mut ui = ui();
+        ui.dismiss_splash();
+        ui.dismiss_splash();
+        assert!(!ui.show_splash);
     }
 }

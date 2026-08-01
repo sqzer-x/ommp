@@ -37,6 +37,9 @@ const LOGO: [&str; 5] = [
 ];
 const LOGO_DISPLAY_W: u16 = 35;
 
+/// Shown at the bottom of the splash so the skip is discoverable.
+const SKIP_HINT: &str = "Press any key to skip";
+
 /// Fill area with dark background + scattered music notes
 fn render_background(buf: &mut Buffer, area: Rect) {
     let bg = Style::default().bg(BG_DARK).fg(BG_DARK);
@@ -349,13 +352,71 @@ pub fn render_splash_screen(frame: &mut Frame, area: Rect, _theme: &Theme, opaci
 
     // --- Tagline (faded) ---
     let tagline = "Terminal music, your way";
-    let tag_w = tagline.len() as u16;
     if cur_y < area.y + area.height {
-        let x = center_x(area.x, area.width, tag_w);
+        let x = center_x(area.x, area.width, tagline.len() as u16);
         buf.set_string(
             x, cur_y, tagline,
             Style::default().fg(fade_color(NEON_CYAN, opacity)).bg(BG_DARK),
         );
     }
+
+    // --- Skip hint, pinned to the bottom ---
+    if area.height > content_h + 2 {
+        let y = area.y + area.height - 2;
+        let x = center_x(area.x, area.width, SKIP_HINT.len() as u16);
+        buf.set_string(
+            x, y, SKIP_HINT,
+            // Dimmer than the rest so it reads as a footnote, and it fades with
+            // everything else rather than popping in at full strength.
+            Style::default()
+                .fg(fade_color(Color::Rgb(120, 130, 150), opacity))
+                .bg(BG_DARK)
+                .add_modifier(Modifier::ITALIC),
+        );
+    }
 }
 
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::backend::TestBackend;
+    use ratatui::Terminal;
+
+    fn rows(w: u16, h: u16) -> Vec<String> {
+        let mut terminal = Terminal::new(TestBackend::new(w, h)).unwrap();
+        terminal
+            .draw(|f| render_splash_screen(f, f.area(), &Theme::default(), 1.0))
+            .unwrap();
+        let buf = terminal.backend().buffer();
+        (0..h)
+            .map(|y| {
+                (0..w)
+                    .map(|x| buf.cell((x, y)).map(|c| c.symbol()).unwrap_or(" "))
+                    .collect::<String>()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_skip_hint_sits_below_the_logo_without_covering_it() {
+        let rows = rows(80, 24);
+        let hint = rows
+            .iter()
+            .position(|r| r.contains(SKIP_HINT))
+            .expect("hint is drawn");
+        let tagline = rows
+            .iter()
+            .position(|r| r.contains("Terminal music, your way"))
+            .expect("tagline is drawn");
+        assert!(hint > tagline, "hint must not land on the centred block");
+        assert!(hint < rows.len(), "hint stays on screen");
+    }
+
+    #[test]
+    fn a_terminal_too_short_for_the_hint_drops_it_rather_than_overlapping() {
+        // Nine rows of content plus the hint's own two do not fit in eleven.
+        assert!(!rows(60, 11).iter().any(|r| r.contains(SKIP_HINT)));
+        assert!(rows(60, 12).iter().any(|r| r.contains(SKIP_HINT)));
+    }
+}
