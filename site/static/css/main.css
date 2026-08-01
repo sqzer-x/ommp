@@ -43,7 +43,11 @@
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --disp: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
 
-  --wrap: 68rem;
+  /* Two measures, not one. Prose wants a short line; a section built around a
+     screenshot wants room, and holding it to the prose width leaves the copy
+     pinned against one edge with dead margin beyond it. */
+  --wrap:      68rem;
+  --wrap-wide: 78rem;
   --sb-h: 3.25rem;
 }
 
@@ -81,7 +85,13 @@ a:hover { color: var(--cyan); }
 }
 .skip:focus { left: 1rem; top: 1rem; z-index: 100; }
 
-.wrap { width: min(100% - 2.5rem, var(--wrap)); margin-inline: auto; }
+/* Three limits, and the smallest wins. The 92% is what keeps the two measures
+   moving together: without it, a viewport between the two caps (1128–1288px)
+   pins the wide sections 20px off the edge while the prose sections stay 96px
+   in, and the 76px stagger reads as a mistake. The fixed 2.5rem only takes over
+   below ~500px, where a proportional gutter would be too tight to touch. */
+.wrap      { width: min(100% - 2.5rem, 92%, var(--wrap));      margin-inline: auto; }
+.wrap-wide { width: min(100% - 2.5rem, 92%, var(--wrap-wide)); margin-inline: auto; }
 
 /* ── Hero ─────────────────────────────────────────────────────────── */
 
@@ -172,6 +182,7 @@ a:hover { color: var(--cyan); }
   border: 1px solid var(--line); border-radius: 6px;
 }
 .shot-hero {
+  /* The one element allowed past the wide measure: it is the product. */
   width: min(100% - 2.5rem, 84rem);
   margin: clamp(3rem, 7vw, 5rem) auto 0;
 }
@@ -238,11 +249,11 @@ a:hover { color: var(--cyan); }
    reader further from it. */
 .split { display: grid; gap: clamp(2rem, 5vw, 3.5rem); align-items: center; }
 @media (min-width: 56rem) {
-  .split { grid-template-columns: 22rem 1fr; }
-  /* Reordering alone leaves the figure in the 22rem track and shrinks it to
+  .split { grid-template-columns: minmax(0, 26rem) 1fr; }
+  /* Reordering alone leaves the figure in the narrow track and shrinks it to
      half the size of the one above. Mirror the tracks so both screenshots come
      out the same size, and only the side they sit on changes. */
-  .split-reverse { grid-template-columns: 1fr 22rem; }
+  .split-reverse { grid-template-columns: 1fr minmax(0, 26rem); }
   .split-reverse .split-text { order: 2; }
 }
 
@@ -284,8 +295,11 @@ kbd {
 }
 /* The clone URL is longer than a third of the wrap. Scrolling it inside the
    card hides the end behind no affordance at all, so wrap it instead — the
-   whole string is what gets copied either way. */
-.install-card .cmd { white-space: normal; overflow-wrap: anywhere; }
+   whole string is what gets copied either way. Wrapping makes that one box two
+   lines tall, so the boxes are stretched to a common height rather than left
+   with one hanging 24px below its neighbours. */
+.install-card { display: grid; grid-template-rows: auto 1fr; }
+.install-card .cmd { white-space: normal; overflow-wrap: anywhere; height: 100%; }
 
 /* ── Footer ───────────────────────────────────────────────────────── */
 
