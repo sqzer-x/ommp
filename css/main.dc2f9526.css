@@ -1,0 +1,307 @@
+/* ommp landing page.
+ *
+ * Every colour here is lifted from the application's own source rather than
+ * invented, so the page and the thing it is advertising cannot drift apart.
+ * The comments name where each one lives. */
+
+/* Relative URLs, not root-absolute: this file is served from a repository
+   subpath and the stylesheet's own name is content-hashed, but ../fonts/
+   resolves correctly either way. */
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/jetbrains-mono-400.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/jetbrains-mono-700.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("../fonts/bricolage-grotesque-var.woff2") format("woff2");
+  font-weight: 400 800; font-style: normal; font-display: swap;
+}
+
+:root {
+  /* about_modal.rs */
+  --bg:      #0A051E;   /* BG_DARK */
+  --pink:    #FF3296;   /* NEON_PINK, the logo gradient's start */
+  --cyan:    #00FFFF;   /* NEON_CYAN, its end */
+  /* theme.rs */
+  --sky:     #64DCFF;   /* border_focused, and the current track */
+  --dim:     #46505F;   /* border_unfocused */
+  --violet:  #C850FF;   /* progress_filled */
+  /* status_bar.rs */
+  --playing: #50FF78;
+
+  --ink:     #EDEAF6;
+  --ink-2:   #A9A6BC;
+  --panel:   #120B2E;
+  --line:    #241945;
+
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --disp: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+
+  --wrap: 68rem;
+  --sb-h: 3.25rem;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+body {
+  margin: 0;
+  padding-bottom: var(--sb-h);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--disp);
+  font-size: clamp(1rem, .95rem + .2vw, 1.125rem);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The terminal face is reserved for things that are literally the app:
+   commands you type, keys you press, tab names, the status bar. */
+code, kbd, .cmd, .kicker, .install-label, .feature-name,
+.number-label, .protocols th, .sb-row { font-family: var(--mono); }
+
+a { color: var(--sky); text-underline-offset: .2em; text-decoration-thickness: 1px; }
+a:hover { color: var(--cyan); }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 2px; }
+
+.skip {
+  position: absolute; left: -9999px;
+  background: var(--cyan); color: var(--bg); padding: .6rem 1rem; font-weight: 700;
+}
+.skip:focus { left: 1rem; top: 1rem; z-index: 100; }
+
+.wrap { width: min(100% - 2.5rem, var(--wrap)); margin-inline: auto; }
+
+/* ── Hero ─────────────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  padding-block: clamp(3rem, 8vw, 6rem) 0;
+  /* The splash screen's scattered-note field, reduced to two soft washes. */
+  background:
+    radial-gradient(60rem 32rem at 18% -8%, #3C145055, transparent 70%),
+    radial-gradient(52rem 30rem at 88% 4%,  #143C5055, transparent 70%);
+}
+.hero-in { text-align: center; }
+
+.hero-logo {
+  width: min(100%, 26rem); height: auto; display: block; margin: 0 auto 2.5rem;
+  animation: rise .6s ease-out both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(.5rem); } to { opacity: 1; transform: none; } }
+
+.kicker {
+  margin: 0 0 1rem;
+  font-size: .8125rem; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.display {
+  font-family: var(--disp);
+  font-weight: 700;
+  font-size: clamp(2.4rem, 1.4rem + 4.4vw, 4.6rem);
+  line-height: 1.02;
+  letter-spacing: -.03em;
+  margin: 0 0 1.5rem;
+}
+.display em {
+  font-style: normal;
+  background: linear-gradient(100deg, var(--pink), var(--cyan));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+.lede {
+  max-width: 46rem; margin: 0 auto 2.5rem;
+  color: var(--ink-2); font-size: 1.0625rem;
+}
+
+.installs { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+.install { text-align: left; }
+.install-label {
+  display: block; font-size: .75rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-2); margin-bottom: .4rem;
+}
+
+.cmd {
+  display: block;
+  font-family: var(--mono); font-size: .9375rem;
+  background: var(--panel); border: 1px solid var(--line);
+  padding: .7rem 1rem; border-radius: 4px;
+  color: var(--ink); white-space: nowrap; overflow-x: auto;
+}
+.cmd::before { content: "$ "; color: var(--dim); }
+.cmd[data-copy] { cursor: pointer; }
+.cmd[data-copy]:hover { border-color: var(--sky); }
+.cmd.is-copied { border-color: var(--playing); }
+.cmd.is-copied::after { content: " copied"; color: var(--playing); }
+
+.hero-meta { margin-top: 2rem; color: var(--ink-2); font-size: .875rem; }
+
+/* ── Screenshots ──────────────────────────────────────────────────── */
+
+.shot { margin: 0; }
+.shot img {
+  display: block; width: 100%; height: auto;
+  border: 1px solid var(--line); border-radius: 6px;
+}
+.shot-hero {
+  width: min(100% - 2.5rem, 84rem);
+  margin: clamp(3rem, 7vw, 5rem) auto 0;
+}
+.shot-hero img { box-shadow: 0 2rem 5rem -1.5rem #00000099; }
+
+/* ── Bands ────────────────────────────────────────────────────────── */
+
+.band { padding-block: clamp(4rem, 9vw, 7rem); }
+.band-alt { background: #0D0725; border-block: 1px solid var(--line); }
+.band-close { padding-bottom: clamp(3rem, 6vw, 4.5rem); }
+
+.sec-title {
+  font-family: var(--disp); font-weight: 600;
+  font-size: clamp(1.7rem, 1.2rem + 1.9vw, 2.6rem);
+  line-height: 1.1; letter-spacing: -.02em; margin: 0 0 1rem;
+}
+.sec-lede { max-width: 44rem; color: var(--ink-2); margin: 0 0 2.5rem; }
+
+/* ── Features ─────────────────────────────────────────────────────── */
+
+.features {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+.feature {
+  background: var(--panel);
+  border: 1px solid var(--line); border-left: 2px solid var(--accent);
+  border-radius: 5px;
+  padding: 1.4rem 1.4rem 1.6rem;
+}
+.feature-name {
+  display: inline-block; margin-bottom: .6rem;
+  color: var(--accent); font-weight: 700; font-size: .9375rem;
+  letter-spacing: .04em;
+}
+.feature-body { margin: 0; color: var(--ink-2); font-size: .9375rem; }
+.feature-body code {
+  color: var(--sky); background: #1B1140;
+  padding: .05em .3em; border-radius: 3px; font-size: .875em;
+}
+.feature-body em { font-style: italic; color: var(--ink); }
+
+/* ── Numbers ──────────────────────────────────────────────────────── */
+
+.numbers {
+  margin: 0; display: grid; gap: 2.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+.number { border-top: 2px solid var(--violet); padding-top: 1.25rem; }
+.number-value {
+  font-family: var(--disp); font-weight: 700;
+  font-size: clamp(2.2rem, 1.6rem + 2.4vw, 3.2rem);
+  line-height: 1; letter-spacing: -.03em; margin: 0 0 .5rem;
+}
+.number-label { margin: 0 0 .75rem; color: var(--ink); font-size: .9375rem; }
+.number-note { margin: 0; color: var(--ink-2); font-size: .875rem; }
+
+/* ── Split sections ───────────────────────────────────────────────── */
+
+.split { display: grid; gap: clamp(2rem, 5vw, 3.5rem); align-items: center; }
+@media (min-width: 56rem) {
+  .split { grid-template-columns: 22rem 1fr; }
+  .split-reverse .split-text { order: 2; }
+}
+
+.filters { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.filters code {
+  display: inline-block; background: var(--panel); border: 1px solid var(--line);
+  padding: .35rem .7rem; border-radius: 4px; font-size: .875rem; color: var(--sky);
+}
+
+.keys { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.keys li { display: grid; grid-template-columns: 6.5rem 1fr; align-items: baseline; gap: .75rem; }
+.keys span { color: var(--ink-2); font-size: .9375rem; }
+
+kbd {
+  font-family: var(--mono); font-size: .8125rem; font-weight: 700;
+  background: var(--panel); border: 1px solid var(--line); border-bottom-width: 2px;
+  border-radius: 4px; padding: .2rem .5rem; color: var(--sky);
+  display: inline-block; text-align: center;
+}
+
+/* ── Requirements ─────────────────────────────────────────────────── */
+
+.reqs { display: grid; gap: 2.5rem; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); }
+.req h3 { font-family: var(--disp); font-size: 1.25rem; font-weight: 600; margin: 0 0 .75rem; }
+.req p { margin: 0 0 1rem; color: var(--ink-2); font-size: .9375rem; }
+.req code { background: var(--panel); padding: .05em .35em; border-radius: 3px; color: var(--ink); }
+.req-note { font-size: .8125rem; }
+
+.protocols { border-collapse: collapse; width: 100%; margin-bottom: 1rem; font-size: .875rem; }
+.protocols th, .protocols td { text-align: left; padding: .5rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.protocols th { font-weight: 700; color: var(--sky); white-space: nowrap; padding-right: 1.25rem; }
+.protocols td { color: var(--ink-2); }
+
+/* ── Install grid ─────────────────────────────────────────────────── */
+
+.install-grid {
+  display: grid; gap: 1rem; margin-bottom: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+}
+
+/* ── Footer ───────────────────────────────────────────────────────── */
+
+.foot { border-top: 1px solid var(--line); padding-block: 2.5rem; }
+.foot-in { display: grid; gap: 1rem; }
+.foot-name {
+  margin: 0; font-weight: 700; letter-spacing: .1em;
+  background: linear-gradient(100deg, var(--pink), var(--cyan));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  width: max-content;
+}
+.foot-links { display: flex; flex-wrap: wrap; gap: 1.25rem; font-size: .875rem; }
+.foot-fine { margin: 0; color: var(--ink-2); font-size: .8125rem; }
+
+/* ── The signature: ommp's status bar, tracking the page ──────────── */
+
+.statusbar {
+  position: fixed; inset: auto 0 0 0; z-index: 50;
+  height: var(--sb-h);
+  background: #0A051EF2;
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line);
+  font-size: .8125rem;
+}
+.sb-fill {
+  height: 2px; width: 0%;
+  background: var(--violet);
+  transition: width .1s linear;
+}
+.sb-row {
+  height: calc(var(--sb-h) - 2px);
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  gap: 1rem;
+  width: min(100% - 2.5rem, var(--wrap)); margin-inline: auto;
+}
+.sb-state { color: var(--playing); font-weight: 700; white-space: nowrap; }
+.sb-track {
+  color: var(--sky); text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sb-time { color: var(--ink-2); text-align: right; white-space: nowrap; }
+
+@media (max-width: 34rem) {
+  .sb-row { grid-template-columns: auto 1fr; }
+  .sb-state { display: none; }
+  .sb-time { font-size: .75rem; }
+}

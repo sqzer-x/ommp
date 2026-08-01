@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /ommp/
+
+Sitemap: https://sqzer-x.github.io/ommp/sitemap.xml
