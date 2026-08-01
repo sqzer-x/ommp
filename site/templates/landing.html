@@ -101,12 +101,10 @@
 
 <!-- ── Search ────────────────────────────────────────────────────────── -->
 <section class="band" data-section="Search">
-  <div class="wrap">
-    <div class="split">
-      <div class="split-text">
-        <h2 class="sec-title">Find it while you type</h2>
-        <p class="sec-lede">Results narrow on every keystroke. Narrow further with a field, or by format.</p>
-      </div>
+  <div class="wrap split">
+    <div class="split-text">
+      <h2 class="sec-title">Find it while you type</h2>
+      <p class="sec-lede">Results narrow on every keystroke. Narrow further with a field, or by format.</p>
       <ul class="filters">
         <li><code>artist:yorushika</code></li>
         <li><code>album:elma</code></li>
@@ -114,30 +112,28 @@
         <li><code>*.flac</code></li>
       </ul>
     </div>
-    <figure class="shot shot-detail">
+    <figure class="shot">
       <img src="{{ asset('img/03-search.avif') }}" alt="The search overlay filtering a library down to fifty of fifty-two tracks"
-           width="2400" height="1560" loading="lazy">
+           width="3840" height="2160" loading="lazy">
     </figure>
   </div>
 </section>
 
 <!-- ── Keys ──────────────────────────────────────────────────────────── -->
 <section class="band band-alt" data-section="Keys">
-  <div class="wrap">
-    <div class="split">
-      <div class="split-text">
-        <h2 class="sec-title">Keys where you expect them</h2>
-        <p class="sec-lede">Vim motions for the lists, media keys for the music. The mouse works too — click a tab, double-click a track, <kbd>Ctrl</kbd>-drag a border to resize.</p>
-      </div>
+  <div class="wrap split split-reverse">
+    <div class="split-text">
+      <h2 class="sec-title">Keys where you expect them</h2>
+      <p class="sec-lede">Vim motions for the lists, media keys for the music. The mouse works too — click a tab, double-click a track, <kbd>Ctrl</kbd>-drag a border to resize.</p>
       <ul class="keys">
         {%- for k in x.keys %}
         <li><kbd>{{ k.key }}</kbd><span>{{ k.desc }}</span></li>
         {%- endfor %}
       </ul>
     </div>
-    <figure class="shot shot-detail">
+    <figure class="shot">
       <img src="{{ asset('img/02-help.avif') }}" alt="The keybinding overlay, two columns covering playback and navigation"
-           width="3100" height="1700" loading="lazy">
+           width="3840" height="2160" loading="lazy">
     </figure>
   </div>
 </section>

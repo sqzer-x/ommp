@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Capture ommp screenshots for the landing page, and crop them to what the
-# page actually shows.
+# Capture the ommp screenshots the landing page uses.
 #
 # Runs the real binary in a real terminal: album art only renders as an image
 # under a graphics protocol, and Ghostty is the only installed terminal that
@@ -11,9 +10,10 @@
 #   14  the wide shot. Everything fits — full album names, and all thirteen
 #       fields of the info panel including the sample rate and bit depth.
 #       At 20 the panel stops at "Disc #" and the best detail is lost.
-#   20  the modal close-ups. A modal is sized as a percentage of the terminal
-#       but its contents are a fixed number of characters, so a wider terminal
-#       just adds empty space inside it. 20 is where the columns sit tight.
+#   20  the modal shots. A modal is sized as a percentage of the terminal but
+#       its contents are a fixed number of characters, so a wider terminal just
+#       adds empty space inside it. 20 is where the columns sit tight, and where
+#       the keybindings still read at the size the page shows them.
 #
 # The window is fullscreen for about fifteen seconds and then closes. Your
 # player settings and your default sink's mute state are backed up and
@@ -83,29 +83,34 @@ stop
 pactl set-sink-mute "$SINK" 0
 
 # ── The modals ────────────────────────────────────────────────────────────
-# Nothing plays here, so nothing is audible.
+# Playing here too: the status bar shows through beside every modal, and a shot
+# that reads Stopped next to two that read Playing looks like a mistake.
 python3 "$HERE/prep-state.py" "$STATE"
+pactl set-sink-mute "$SINK" 1
 launch 20
+wtype " "
+sleep 8
 wtype -M ctrl -k h -m ctrl; sleep 1.2; grim -o "$MONITOR" "$RAW/02-help.png"
 wtype -k Escape; sleep 0.5
 wtype -M ctrl -k s -m ctrl; sleep 0.8; wtype -d 40 "yorushika"; sleep 1.2
 grim -o "$MONITOR" "$RAW/03-search.png"
 stop
+pactl set-sink-mute "$SINK" 0
 
 # ── Crop and encode ───────────────────────────────────────────────────────
 # Kept at the captured 3840-wide scale rather than downsampled: the pixel grid
 # of terminal text is already sharp, and resampling it both blurs the glyphs
 # and *inflates* the PNG by inventing intermediate colours.
 #
-# The modals are cropped to themselves. Uncropped they are a small rectangle in
-# the middle of a 4K frame, and no amount of page width makes them readable.
-crop() { magick "$RAW/$1.png" -crop "$2" +repage -strip "$OUT/$3.png"; }
+# Whole frames, not crops: the page shows each screenshot beside the copy that
+# explains it, at a size where the full window still reads.
+for n in 01-main 02-help 03-search; do
+  magick "$RAW/$n.png" -strip "$RAW/$n-stripped.png"
+  avifenc -q 84 -s 0 "$RAW/$n-stripped.png" "$OUT/$n.avif" >/dev/null
+  rm -f "$RAW/$n-stripped.png"
+done
 
-magick "$RAW/01-main.png" -strip "$OUT/01-main.png"
-crop 02-help   3100x1700+380+250 02-help
-crop 03-search 2400x1560+720+300 03-search
-
-for f in "$OUT"/0*.png; do
+for f in "$OUT"/0*.avif; do
   printf "  %-16s %-11s %s\n" "$(basename "$f")" \
     "$(magick identify -format '%wx%h' "$f")" "$(du -h "$f" | cut -f1)"
 done
