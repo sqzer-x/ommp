@@ -4,4 +4,4 @@
 
 ## Pages
 
-- [ommp — Oh My Music Player](https://ommp.sqzer.com/): A terminal music player written in Rust. No MPD, no daemon — point it at ~/Music and press play.
+- [ommp — Oh My Music Player](https://ommp.sqzer.com/): A terminal music player written in Rust. It plays the files already on your disk, in the terminal you already have open.

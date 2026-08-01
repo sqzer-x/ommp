@@ -4,23 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ommp — a terminal music player</title>
-<meta name="description" content="A terminal music player written in Rust. No MPD, no daemon — point it at ~/Music and press play.">
+<meta name="description" content="A terminal music player written in Rust. It plays the files already on your disk, in the terminal you already have open.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0A051E">
 
 <meta property="og:type" content="website">
 <meta property="og:title" content="ommp — Oh My Music Player">
-<meta property="og:description" content="A terminal music player written in Rust. No MPD, no daemon — point it at ~/Music and press play.">
+<meta property="og:description" content="A terminal music player written in Rust. It plays the files already on your disk, in the terminal you already have open.">
 <meta property="og:url" content="https://ommp.sqzer.com/">
 <meta property="og:image" content="https://ommp.sqzer.com/img/og.png">
 <meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="preload" as="font" type="font/woff2" href="/fonts/jetbrains-mono-400.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/fonts/bricolage-grotesque-var.woff2" crossorigin>
-<link rel="stylesheet" href="/css/main.89b01116.css">
+<link rel="stylesheet" href="/css/main.bc496e1f.css">
 </head>
 <body>
 
-<a class="skip" href="#what">Skip to content</a>
+<a class="skip" href="#art">Skip to content</a>
 
 <!-- ── Hero ──────────────────────────────────────────────────────────── -->
 <header class="hero">
@@ -29,9 +29,9 @@
 
     <p class="kicker">Terminal music player</p>
     <h1 class="display">
-      Point it at ~/Music.<br><em>Press play.</em>
+      Play your own music<br><em>without leaving the terminal.</em>
     </h1>
-    <p class="lede">No MPD. No daemon. No config file. One binary that reads your tags, draws your album art in the terminal, and keeps your playlists and layout between sessions.</p>
+    <p class="lede">ommp plays the files already on your disk: the CDs you ripped, the albums you went looking for, the folder you have been adding to for years. One command, and it plays.</p>
 
     <div class="installs">
       <div class="install">
@@ -51,167 +51,124 @@
       <a href="https://aur.archlinux.org/packages/ommp">AUR</a>
     </p>
   </div>
-
-  <figure class="shot shot-hero">
-    <img src="/img/01-main.avif" alt="ommp playing a track: library on the left, queue in the middle, album art and track details on the right"
-         width="3840" height="2160" fetchpriority="high">
-  </figure>
 </header>
 
-<!-- ── Features, keyed to the tabs ───────────────────────────────────── -->
-<section id="what" class="band" data-section="Seven ways in">
-  <div class="wrap-wide">
-    <h2 class="sec-title">Seven ways into the same library</h2>
-    <p class="sec-lede">The tab strip across the top is the whole navigation model. Each one is a different question about the same files.</p>
-
-    <ul class="features">
-      <li class="feature" style="--accent: #64DCFF">
-        <span class="feature-name">Queue</span>
-        <p class="feature-body">Everything queues by default. Add an album without losing what is playing, drop a track with <code>d</code>, clear it with <code>c</code>.</p>
-      </li>
-      <li class="feature" style="--accent: #78FFB4">
-        <span class="feature-name">Directories</span>
-        <p class="feature-body">Browse the folders you actually organised, not a database's idea of them.</p>
-      </li>
-      <li class="feature" style="--accent: #FFB464">
-        <span class="feature-name">Artists</span>
-        <p class="feature-body">Grouped by the track artist, exactly as the file is tagged. Untagged files land under one heading instead of vanishing.</p>
-      </li>
-      <li class="feature" style="--accent: #C882FF">
-        <span class="feature-name">Albums</span>
-        <p class="feature-body">Paired with the album artist where it is tagged, the track artist where it is not — so two records called <em>Greatest Hits</em> stay two records.</p>
-      </li>
-      <li class="feature" style="--accent: #FF7896">
-        <span class="feature-name">Genre</span>
-        <p class="feature-body">Whatever your tags say. ommp reads them, it does not invent them.</p>
-      </li>
-      <li class="feature" style="--accent: #78C8FF">
-        <span class="feature-name">Format</span>
-        <p class="feature-body">FLAC, MP3, M4A, OGG, WAV, Opus, AAC, WMA — with a count beside each.</p>
-      </li>
-      <li class="feature" style="--accent: #FFDC64">
-        <span class="feature-name">Playlists</span>
-        <p class="feature-body">Create, rename, star a track with <code>b</code>. Saved between sessions, and entries survive a drive that was not mounted.</p>
-      </li>
-    </ul>
-  </div>
-</section>
-
-<!-- ── Speed ─────────────────────────────────────────────────────────── -->
-<section class="band band-alt" data-section="Speed">
+<!-- ── 1. The artwork: the first thing you scroll into ────────────────── -->
+<section id="art" class="band band-art" data-section="Album art">
   <div class="wrap">
-    <h2 class="sec-title">Fast enough to forget about</h2>
-    <p class="sec-lede">Measured on this machine, not estimated. A library that takes a moment to open is a library you stop opening.</p>
+    <h2 class="sec-title sec-title-lg">That is your album art, in a terminal.</h2>
+    <p class="sec-lede sec-lede-lg">The cover comes out of the file itself: the same image your tags have been carrying since you ripped the disc or paid for the download.</p>
+  </div>
 
-    <dl class="numbers">
-      <div class="number">
-        <dt class="number-value">18 ms</dt>
-        <dd class="number-label">to open a 5,000-track library</dd>
-        <dd class="number-note">Tags are cached and re-read only when a file&#x27;s timestamp or size changes. The first scan runs across every core.</dd>
-      </div>
-      <div class="number">
-        <dt class="number-value">0.3 ms</dt>
-        <dd class="number-label">per frame at 50,000 tracks</dd>
-        <dd class="number-note">Flat, not linear — the browse views are built once when the library loads, not on every redraw.</dd>
-      </div>
-      <div class="number">
-        <dt class="number-value">7 MB</dt>
-        <dd class="number-label">one binary, three libraries</dd>
-        <dd class="number-note">Links against alsa-lib, glibc and gcc-libs. Nothing to configure, nothing running in the background.</dd>
-      </div>
-    </dl>
+  <figure class="shot shot-hero">
+    <img src="/img/01-main.avif" alt="ommp playing a track: the library on the left, the queue in the middle, and on the right the album cover drawn as a real image above thirteen lines of track detail"
+         width="3840" height="2160" fetchpriority="high">
+  </figure>
+
+  <div class="wrap two-up">
+    <p>In Ghostty, Kitty, WezTerm, Konsole, foot, xterm and Contour, ommp hands the artwork to the terminal's own graphics protocol and it arrives as a real image, grain and gradient intact, sitting in a shell next to your prompt. Terminals without one draw the same sleeve in block characters, coarser, and still recognisably the record you know.</p>
+    <p>Beside it, thirteen lines saying exactly what is playing, including the ones you went to some trouble over: <b>48.0 kHz</b>, <b>24-bit</b>, <b>Stereo</b>. Nothing there was fetched or guessed. All of it came off your disk, where it has been the whole time.</p>
   </div>
 </section>
 
-<!-- ── Search ────────────────────────────────────────────────────────── -->
-<section class="band" data-section="Search">
+<!-- ── 2. Nothing to start ────────────────────────────────────────────── -->
+<section class="band band-alt" data-section="Nothing to start">
   <div class="wrap-wide split">
     <div class="split-text">
-      <h2 class="sec-title">Find it while you type</h2>
-      <p class="sec-lede">Results narrow on every keystroke. Narrow further with a field, or by format.</p>
-      <ul class="filters">
-        <li><code>artist:yorushika</code></li>
-        <li><code>album:elma</code></li>
-        <li><code>genre:rock</code></li>
-        <li><code>*.flac</code></li>
+      <h2 class="sec-title">Nothing to start first.</h2>
+      <p class="sec-lede">No daemon in the background, no service to enable, no file to write before the first note. You type <code>ommp</code>, it reads <code>~/Music</code>, and it plays.</p>
+      <p class="sec-body">Quit it and nothing of it keeps running. Everything it plays is already on your disk, so there is nothing to sign into, nothing to subscribe to, and nothing that stops working when a company changes its mind.</p>
+    </div><div class="setup" aria-hidden="true">
+      <ul class="setup-skipped">
+        <li>Create an account</li>
+        <li>Import your library</li>
+        <li>systemctl --user enable mpd</li>
+        <li>~/.config/mpd/mpd.conf</li>
       </ul>
+      <p class="setup-real">ommp</p>
     </div>
-    <figure class="shot">
-      <img src="/img/03-search.avif" alt="The search overlay filtering a library down to fifty of fifty-two tracks"
+  </div>
+</section>
+
+<!-- ── 3. Browse ──────────────────────────────────────────────────────── -->
+<section class="band" data-section="Browse">
+  <div class="wrap-wide">
+    <h2 class="sec-title">Ask it seven ways, or just type.</h2>
+    <p class="sec-lede">Press <kbd>1</kbd> to <kbd>7</kbd> to move along the tab strip: the queue everything lands in, the directory tree you built yourself, then artists, albums, genre, format and playlists. The same library, seven questions.</p><ol class="tabstrip">
+      <li style="--accent: #64DCFF">Queue</li>
+      <li style="--accent: #78FFB4">Directories</li>
+      <li style="--accent: #FFB464">Artists</li>
+      <li style="--accent: #C882FF">Albums</li>
+      <li style="--accent: #FF7896">Genre</li>
+      <li style="--accent: #78C8FF">Format</li>
+      <li style="--accent: #FFDC64">Playlists</li>
+    </ol>
+
+    <div class="two-up">
+      <p>Directories keeps the folders you organised, in the order you organised them. Genre is whatever you wrote in it. Format counts what you have of each: FLAC, MP3, M4A, OGG, WAV, Opus, AAC, WMA.</p>
+      <p>When you already know the name, <kbd>Ctrl</kbd>+<kbd>S</kbd> and start typing. The list narrows on every keystroke. Put <code>artist:</code>, <code>album:</code> or <code>genre:</code> in front to say which you meant, or type <code>*.flac</code> for when you own something twice and want the good copy.</p>
+    </div>
+
+    <figure class="shot shot-wide">
+      <img src="/img/03-search.avif" alt="The search overlay narrowing a library to fifty of its fifty-two tracks as the word yorushika is typed"
            width="3840" height="2160" loading="lazy">
     </figure>
   </div>
 </section>
 
-<!-- ── Keys ──────────────────────────────────────────────────────────── -->
-<section class="band band-alt" data-section="Keys">
+<!-- ── 4. Nothing lost ────────────────────────────────────────────────── -->
+<section class="band band-alt" data-section="Nothing lost">
+  <div class="wrap">
+    <h2 class="sec-title">Nothing quietly disappears.</h2>
+    <p class="sec-lede">The small decisions are the ones you notice on the second day.</p>
+
+    <ul class="details">
+      <li style="--accent: #FFB464">A file with no tags at all lands under <b>Unknown Artist</b>, where you can still find it.</li>
+      <li style="--accent: #C882FF">An album is paired with its album artist where one is tagged and the track artist where one is not, so two records called <i>Greatest Hits</i> stay two records.</li>
+      <li style="--accent: #FFDC64">A playlist entry pointing at a drive that was not mounted when you started is left alone rather than pruned, and it works again when the drive comes back.</li>
+      <li style="--accent: #78FFB4">Add files to the folder while ommp is running and they turn up. Take some away and they go.</li>
+    </ul>
+
+    <p class="details-close">Volume, shuffle, repeat, your playlists and the pane widths you dragged all come back the way you left them. The track does not. You choose that again.</p>
+  </div>
+</section>
+
+<!-- ── 5. Keys ────────────────────────────────────────────────────────── -->
+<section class="band" data-section="Keys">
   <div class="wrap-wide split split-reverse">
     <div class="split-text">
-      <h2 class="sec-title">Keys where you expect them</h2>
-      <p class="sec-lede">Vim motions for the lists, media keys for the music. The mouse works too — click a tab, double-click a track, <kbd>Ctrl</kbd>-drag a border to resize.</p>
-      <ul class="keys">
-        <li><kbd>Space</kbd><span>Play / pause</span></li>
-        <li><kbd>n / N</kbd><span>Next / previous</span></li>
-        <li><kbd>+ / -</kbd><span>Volume</span></li>
-        <li><kbd>s / r</kbd><span>Shuffle / repeat</span></li>
-        <li><kbd>1–7</kbd><span>Switch tab</span></li>
-        <li><kbd>Tab</kbd><span>Cycle pane focus</span></li>
-        <li><kbd>Ctrl+S</kbd><span>Search</span></li>
-        <li><kbd>Ctrl+H</kbd><span>Every other key</span></li>
-      </ul>
+      <h2 class="sec-title sec-title-mono">h j k l, Space, n.</h2>
+      <p class="sec-lede">The keys already under your hands in every other window you have open.</p>
+      <p class="sec-body"><kbd>j</kbd> and <kbd>k</kbd> move the list, <kbd>g</kbd> and <kbd>G</kbd> jump to the ends, <kbd>h</kbd> and <kbd>l</kbd> move between panes and <kbd>Tab</kbd> does the same. <kbd>Space</kbd> plays and pauses, <kbd>n</kbd> and <kbd>N</kbd> step through the queue, <kbd>+</kbd> and <kbd>-</kbd> take the volume, the arrows seek, <kbd>s</kbd> shuffles, <kbd>r</kbd> repeats, and <kbd>b</kbd> drops the playing track into a playlist. <kbd>Ctrl</kbd>+<kbd>H</kbd> lists every key there is.</p>
+      <p class="sec-body">The mouse works too, when your hand is already there: click a tab, double-click a track, <kbd>Ctrl</kbd>-drag a border to resize a pane.</p>
     </div>
     <figure class="shot">
-      <img src="/img/02-help.avif" alt="The keybinding overlay, two columns covering playback and navigation"
+      <img src="/img/02-help.avif" alt="The keybinding overlay open over the player, two columns covering playback and navigation"
            width="3840" height="2160" loading="lazy">
     </figure>
   </div>
 </section>
 
-<!-- ── Requirements ──────────────────────────────────────────────────── -->
-<section class="band" data-section="Before you start">
-  <div class="wrap">
-    <h2 class="sec-title">Two things to check first</h2>
-
-    <div class="reqs">
-      <div class="req">
-        <h3>A Nerd Font</h3>
-        <p>The interface is built from <a href="https://www.nerdfonts.com/">Nerd Font</a> icons. Without one they render as empty boxes. Install <code>JetBrainsMono Nerd Font</code> or similar and set it as your terminal font.</p>
-      </div>
-      <div class="req">
-        <h3>A graphics protocol, for album art</h3>
-        <p>Cover art is read out of the audio file itself and drawn as a real image where the terminal supports it. ommp detects which protocol is available at startup — there is nothing to configure.</p>
-        <table class="protocols">
-          <tbody>
-            <tr><th scope="row">Kitty graphics</th><td>Ghostty, Kitty, WezTerm, Konsole</td></tr>
-            <tr><th scope="row">Sixel</th><td>foot, WezTerm, xterm, Contour</td></tr>
-            <tr><th scope="row">iTerm2</th><td>WezTerm, Konsole</td></tr>
-          </tbody>
-        </table>
-        <p class="req-note">Anything else falls back to block characters, which still shows the artwork — just coarser. GPU acceleration is unrelated: Alacritty is accelerated and supports none of these; xterm is not and supports Sixel.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── Install ───────────────────────────────────────────────────────── -->
+<!-- ── 6. Install ─────────────────────────────────────────────────────── -->
 <section class="band band-close" data-section="Install">
   <div class="wrap">
-    <h2 class="sec-title">Install</h2>
+    <h2 class="sec-title">Install it.</h2>
+
     <div class="install-grid">
       <div class="install-card">
         <span class="install-label">Arch Linux</span>
         <code class="cmd" data-copy>yay -S ommp</code>
       </div>
       <div class="install-card">
-        <span class="install-label">With Rust installed</span>
+        <span class="install-label">Anywhere else</span>
         <code class="cmd" data-copy>cargo install ommp</code>
       </div>
-      <div class="install-card">
-        <span class="install-label">From source</span>
-        <code class="cmd" data-copy>git clone https://github.com/sqzer-x/ommp</code>
-      </div>
     </div>
-    <p class="sec-lede">Then put some music in <code>~/Music</code> and run <code>ommp</code>.</p>
+
+    <p class="install-close">Then put some music in <code>~/Music</code> and run <code>ommp</code>.</p>
+    <p class="fine">About 7 MB installed, linked against alsa-lib, glibc and gcc-libs and nothing else, and a 5,000-track library opens in about 18 ms once its tags are cached.</p>
+    <p class="fine">Two things to set while you are here. ommp draws its interface with <a href="https://www.nerdfonts.com/">Nerd Font</a> glyphs, so point your terminal at a Nerd Font or the icons arrive as empty boxes. And album art comes through as a real image in terminals that speak Kitty graphics, Sixel or the iTerm2 protocol; ommp works out which at startup and there is nothing for you to configure. Everywhere else the cover is drawn in blocks.</p>
+    <p class="fine">Linux only, said plainly: it is untested anywhere else and does not compile on Windows. It plays what is on your disk, so there is no streaming, no catalogue and no account, and it does not resume the track you were playing last time.</p>
   </div>
 </section>
 
@@ -224,6 +181,7 @@
       <a href="https://aur.archlinux.org/packages/ommp">AUR</a>
       <a href="https://github.com/sqzer-x/ommp/blob/main/LICENSE">Apache&nbsp;2.0</a>
     </nav>
+    <p class="foot-fine">The notes behind the top of this page are the ones ommp scatters across its splash screen, generated from the same hash the program uses.</p>
     <p class="foot-fine">Built with <a href="https://github.com/sqzer-x/sqzass">sqzass</a>. Copyright 2026 sqzer (hyukjin an).</p>
   </div>
 </footer>
