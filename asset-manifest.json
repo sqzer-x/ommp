@@ -1,11 +1,13 @@
 {
-  "css/main.css": "/ommp/css/main.dc2f9526.css",
-  "fonts/bricolage-grotesque-var.woff2": "/ommp/fonts/bricolage-grotesque-var.woff2",
-  "fonts/jetbrains-mono-400.woff2": "/ommp/fonts/jetbrains-mono-400.woff2",
-  "fonts/jetbrains-mono-700.woff2": "/ommp/fonts/jetbrains-mono-700.woff2",
-  "img/01-main.png": "/ommp/img/01-main.png",
-  "img/02-help.png": "/ommp/img/02-help.png",
-  "img/03-search.png": "/ommp/img/03-search.png",
-  "img/logo.png": "/ommp/img/logo.png",
-  "js/status.js": "/ommp/js/status.4d369529.js"
+  "CNAME": "/CNAME",
+  "css/main.css": "/css/main.a6589403.css",
+  "fonts/bricolage-grotesque-var.woff2": "/fonts/bricolage-grotesque-var.woff2",
+  "fonts/jetbrains-mono-400.woff2": "/fonts/jetbrains-mono-400.woff2",
+  "fonts/jetbrains-mono-700.woff2": "/fonts/jetbrains-mono-700.woff2",
+  "img/01-main.avif": "/img/01-main.avif",
+  "img/02-help.avif": "/img/02-help.avif",
+  "img/03-search.avif": "/img/03-search.avif",
+  "img/logo.png": "/img/logo.png",
+  "img/og.png": "/img/og.png",
+  "js/status.js": "/js/status.4d369529.js"
 }

@@ -11,14 +11,14 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="ommp — Oh My Music Player">
 <meta property="og:description" content="A terminal music player written in Rust. No MPD, no daemon — point it at ~/Music and press play.">
-<meta property="og:url" content="https://sqzer-x.github.io/ommp/">
-<meta property="og:image" content="https://sqzer-x.github.io/ommp/img/01-main.png">
+<meta property="og:url" content="https://ommp.sqzer.com/">
+<meta property="og:image" content="https://ommp.sqzer.com/img/og.png">
 <meta name="twitter:card" content="summary_large_image">
 
-<link rel="icon" href="/ommp/img/logo.png">
-<link rel="preload" as="font" type="font/woff2" href="/ommp/fonts/jetbrains-mono-400.woff2" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="/ommp/fonts/bricolage-grotesque-var.woff2" crossorigin>
-<link rel="stylesheet" href="/ommp/css/main.dc2f9526.css">
+<link rel="icon" href="/img/logo.png">
+<link rel="preload" as="font" type="font/woff2" href="/fonts/jetbrains-mono-400.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/bricolage-grotesque-var.woff2" crossorigin>
+<link rel="stylesheet" href="/css/main.a6589403.css">
 </head>
 <body>
 
@@ -27,7 +27,7 @@
 <!-- ── Hero ──────────────────────────────────────────────────────────── -->
 <header class="hero">
   <div class="wrap hero-in">
-    <img class="hero-logo" src="/ommp/img/logo.png" alt="ommp" width="723" height="421">
+    <img class="hero-logo" src="/img/logo.png" alt="ommp" width="723" height="421">
 
     <p class="kicker">Terminal music player</p>
     <h1 class="display">
@@ -55,8 +55,8 @@
   </div>
 
   <figure class="shot shot-hero">
-    <img src="/ommp/img/01-main.png" alt="ommp playing a track: library on the left, queue in the middle, album art and track details on the right"
-         width="2400" height="1350" fetchpriority="high">
+    <img src="/img/01-main.avif" alt="ommp playing a track: library on the left, queue in the middle, album art and track details on the right"
+         width="3840" height="2160" fetchpriority="high">
   </figure>
 </header>
 
@@ -127,10 +127,12 @@
 
 <!-- ── Search ────────────────────────────────────────────────────────── -->
 <section class="band" data-section="Search">
-  <div class="wrap split">
-    <div class="split-text">
-      <h2 class="sec-title">Find it while you type</h2>
-      <p class="sec-lede">Results narrow on every keystroke. Narrow further with a field, or by format.</p>
+  <div class="wrap">
+    <div class="split">
+      <div class="split-text">
+        <h2 class="sec-title">Find it while you type</h2>
+        <p class="sec-lede">Results narrow on every keystroke. Narrow further with a field, or by format.</p>
+      </div>
       <ul class="filters">
         <li><code>artist:yorushika</code></li>
         <li><code>album:elma</code></li>
@@ -138,19 +140,21 @@
         <li><code>*.flac</code></li>
       </ul>
     </div>
-    <figure class="shot">
-      <img src="/ommp/img/03-search.png" alt="The search overlay filtering a library down to fifty of fifty-two tracks"
-           width="2400" height="1350" loading="lazy">
+    <figure class="shot shot-detail">
+      <img src="/img/03-search.avif" alt="The search overlay filtering a library down to fifty of fifty-two tracks"
+           width="2400" height="1560" loading="lazy">
     </figure>
   </div>
 </section>
 
 <!-- ── Keys ──────────────────────────────────────────────────────────── -->
 <section class="band band-alt" data-section="Keys">
-  <div class="wrap split split-reverse">
-    <div class="split-text">
-      <h2 class="sec-title">Keys where you expect them</h2>
-      <p class="sec-lede">Vim motions for the lists, media keys for the music. The mouse works too — click a tab, double-click a track, <kbd>Ctrl</kbd>-drag a border to resize.</p>
+  <div class="wrap">
+    <div class="split">
+      <div class="split-text">
+        <h2 class="sec-title">Keys where you expect them</h2>
+        <p class="sec-lede">Vim motions for the lists, media keys for the music. The mouse works too — click a tab, double-click a track, <kbd>Ctrl</kbd>-drag a border to resize.</p>
+      </div>
       <ul class="keys">
         <li><kbd>Space</kbd><span>Play / pause</span></li>
         <li><kbd>n / N</kbd><span>Next / previous</span></li>
@@ -162,9 +166,9 @@
         <li><kbd>Ctrl+H</kbd><span>Every other key</span></li>
       </ul>
     </div>
-    <figure class="shot">
-      <img src="/ommp/img/02-help.png" alt="The keybinding overlay, two columns covering playback and navigation"
-           width="2400" height="1350" loading="lazy">
+    <figure class="shot shot-detail">
+      <img src="/img/02-help.avif" alt="The keybinding overlay, two columns covering playback and navigation"
+           width="3100" height="1700" loading="lazy">
     </figure>
   </div>
 </section>
@@ -240,6 +244,6 @@
   </div>
 </div>
 
-<script src="/ommp/js/status.4d369529.js" defer></script>
+<script src="/js/status.4d369529.js" defer></script>
 </body>
 </html>

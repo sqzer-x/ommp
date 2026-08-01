@@ -4,4 +4,4 @@
 
 ## Pages
 
-- [ommp — Oh My Music Player](https://sqzer-x.github.io/ommp/): A terminal music player written in Rust. No MPD, no daemon — point it at ~/Music and press play.
+- [ommp — Oh My Music Player](https://ommp.sqzer.com/): A terminal music player written in Rust. No MPD, no daemon — point it at ~/Music and press play.
