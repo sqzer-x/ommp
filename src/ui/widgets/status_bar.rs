@@ -7,6 +7,7 @@ use ratatui::Frame;
 use crate::app::App;
 use crate::app::state::{PlayState, SyncState};
 use crate::ui::theme::Theme;
+use crate::ui::text::format_time;
 
 pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme, resize_mode: bool) {
     let block = if let Some(err) = &app.audio_error {
@@ -179,9 +180,3 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
     frame.render_widget(right, cols[2]);
 }
 
-fn format_time(secs: f64) -> String {
-    let total = secs as u64;
-    let m = total / 60;
-    let s = total % 60;
-    format!("{}:{:02}", m, s)
-}

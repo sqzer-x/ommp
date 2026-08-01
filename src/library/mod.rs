@@ -54,12 +54,7 @@ impl Library {
         let mut set = BTreeSet::new();
         for t in &self.tracks {
             if !t.album.is_empty() {
-                let artist = if t.album_artist.is_empty() {
-                    t.artist.clone()
-                } else {
-                    t.album_artist.clone()
-                };
-                set.insert((t.album.clone(), artist));
+                set.insert((t.album.clone(), self.album_artist_of(t)));
             }
         }
         set.into_iter().collect()
@@ -80,13 +75,42 @@ impl Library {
             .collect()
     }
 
-    pub fn get_tracks_by_album(&self, album: &str) -> Vec<usize> {
+    /// Tracks on `album` by `artist`. `get_albums` pairs every album with its
+    /// artist, so matching on the title alone merged two different records that
+    /// happen to share a name — picking either "Greatest Hits" row queued both.
+    pub fn get_tracks_by_album(&self, album: &str, artist: &str) -> Vec<usize> {
         self.tracks
             .iter()
             .enumerate()
-            .filter(|(_, t)| t.album == album)
+            .filter(|(_, t)| t.album == album && self.album_artist_of(t) == artist)
             .map(|(i, _)| i)
             .collect()
+    }
+
+    /// The artist an album is filed under: the album artist when tagged,
+    /// otherwise the track artist. `get_albums` groups by the same rule.
+    fn album_artist_of(&self, t: &track::Track) -> String {
+        if t.album_artist.is_empty() {
+            t.artist.clone()
+        } else {
+            t.album_artist.clone()
+        }
+    }
+
+    /// Every format with how many tracks use it, in one pass.
+    pub fn format_counts(&self) -> Vec<(String, usize)> {
+        let mut counts: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+        for t in &self.tracks {
+            let ext = t
+                .path
+                .extension()
+                .map(|e| e.to_string_lossy().to_lowercase())
+                .unwrap_or_default();
+            if !ext.is_empty() {
+                *counts.entry(ext).or_default() += 1;
+            }
+        }
+        counts.into_iter().collect()
     }
 
     pub fn get_tracks_by_genre(&self, genre: &str) -> Vec<usize> {

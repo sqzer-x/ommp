@@ -1,9 +1,5 @@
 pub mod library_pane;
 pub mod dir_browser_pane;
 pub mod queue_pane;
-pub mod artists_pane;
-pub mod albums_pane;
-pub mod genre_pane;
-pub mod format_pane;
-pub mod playlists_pane;
+pub mod list_pane;
 pub mod lyrics_pane;

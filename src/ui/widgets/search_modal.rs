@@ -6,6 +6,7 @@ use ratatui::Frame;
 
 use crate::app::App;
 use crate::ui::theme::Theme;
+use crate::ui::text::{centered_rect, fit_to_width};
 
 const HOVER_BG: Color = Color::Indexed(238);
 
@@ -150,46 +151,3 @@ pub fn render_search_modal(
     (result_height, chunks[2])
 }
 
-fn fit_to_width(s: &str, max_width: usize) -> String {
-    use unicode_width::UnicodeWidthStr;
-    let str_width = UnicodeWidthStr::width(s);
-    if str_width <= max_width {
-        format!("{}{}", s, " ".repeat(max_width - str_width))
-    } else {
-        let mut w = 0;
-        let mut result = String::new();
-        for ch in s.chars() {
-            let ch_w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-            if w + ch_w + 1 > max_width {
-                result.push('\u{2026}');
-                w += 1;
-                break;
-            }
-            w += ch_w;
-            result.push(ch);
-        }
-        let pad = max_width.saturating_sub(w);
-        result.push_str(&" ".repeat(pad));
-        result
-    }
-}
-
-fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
-    let vertical = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage((100 - percent_y) / 2),
-            Constraint::Percentage(percent_y),
-            Constraint::Percentage((100 - percent_y) / 2),
-        ])
-        .split(area);
-
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage((100 - percent_x) / 2),
-            Constraint::Percentage(percent_x),
-            Constraint::Percentage((100 - percent_x) / 2),
-        ])
-        .split(vertical[1])[1]
-}

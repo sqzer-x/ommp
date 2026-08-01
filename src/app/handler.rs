@@ -1,10 +1,12 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use ratatui::layout::Rect;
 use std::time::{Duration, Instant};
 
 use crate::app::state::{FocusedPane, Tab};
 use crate::app::{App, AppAction};
 use crate::ui::layout::LayoutAreas;
 use crate::ui::pane::Pane;
+use crate::ui::panes::list_pane;
 use crate::ui::widgets::{progress_bar, tab_bar};
 use crate::ui::widgets::playlist_modal::PlaylistModalMode;
 use crate::ui::Ui;
@@ -391,15 +393,7 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
 
     // Route to focused pane
     let action = match app.focus {
-        FocusedPane::Library => match app.tab {
-            Tab::Queue => ui.library_pane.handle_key(key, app),
-            Tab::Directories => ui.dir_browser_pane.handle_key(key, app),
-            Tab::Artists => ui.artists_pane.handle_key(key, app),
-            Tab::Albums => ui.albums_pane.handle_key(key, app),
-            Tab::Genre => ui.genre_pane.handle_key(key, app),
-            Tab::Format => ui.format_pane.handle_key(key, app),
-            Tab::Playlists => ui.playlists_pane.handle_key(key, app),
-        },
+        FocusedPane::Library => library_key(key, app, ui),
         FocusedPane::Playlist => {
             match key.code {
                 KeyCode::Char('j') | KeyCode::Down => None,
@@ -666,27 +660,10 @@ pub fn handle_mouse_event(
                 .filter(|&row| row < library_row_count(app, ui));
             if in_library && clicked_library_row.is_some() {
                 // First, route mouse to pane for selection update
-                let _sel_action = match app.tab {
-                    Tab::Queue => ui.library_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Directories => ui.dir_browser_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Artists => ui.artists_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Albums => ui.albums_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Genre => ui.genre_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Format => ui.format_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Playlists => ui.playlists_pane.handle_mouse(mouse, areas.library, app),
-                };
+                library_mouse(mouse, areas.library, app, ui);
                 // Then, trigger Enter action to activate the clicked item
                 let enter_key = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-                let activate_action = match app.tab {
-                    Tab::Queue => ui.library_pane.handle_key(enter_key, app),
-                    Tab::Directories => ui.dir_browser_pane.handle_key(enter_key, app),
-                    Tab::Artists => ui.artists_pane.handle_key(enter_key, app),
-                    Tab::Albums => ui.albums_pane.handle_key(enter_key, app),
-                    Tab::Genre => ui.genre_pane.handle_key(enter_key, app),
-                    Tab::Format => ui.format_pane.handle_key(enter_key, app),
-                    Tab::Playlists => ui.playlists_pane.handle_key(enter_key, app),
-                };
-                if let Some(action) = activate_action {
+                if let Some(action) = library_key(enter_key, app, ui) {
                     if matches!(action, AppAction::AddToQueue(_)) {
                         actions.push(AppAction::FocusPane(FocusedPane::Playlist));
                     }
@@ -714,16 +691,7 @@ pub fn handle_mouse_event(
         }
         MouseEventKind::ScrollDown | MouseEventKind::ScrollUp => {
             if in_library {
-                let action = match app.tab {
-                    Tab::Queue => ui.library_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Directories => ui.dir_browser_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Artists => ui.artists_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Albums => ui.albums_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Genre => ui.genre_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Format => ui.format_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Playlists => ui.playlists_pane.handle_mouse(mouse, areas.library, app),
-                };
-                if let Some(a) = action {
+                if let Some(a) = library_mouse(mouse, areas.library, app, ui) {
                     actions.push(a);
                 }
             } else if in_playlist {
@@ -760,11 +728,35 @@ fn library_row_count(app: &App, ui: &Ui) -> usize {
     match app.tab {
         Tab::Queue => ui.library_pane.row_count(app),
         Tab::Directories => ui.dir_browser_pane.entries.len(),
-        Tab::Artists => app.library.get_artists().len(),
-        Tab::Albums => app.library.get_albums().len(),
-        Tab::Genre => app.library.get_genres().len(),
-        Tab::Format => app.library.get_formats().len(),
-        Tab::Playlists => app.playlists.len(),
+        tab => list_pane::rows_for(app, tab).len(),
+    }
+}
+
+/// Route a key to whichever pane the library column is showing.
+fn library_key(key: KeyEvent, app: &App, ui: &mut Ui) -> Option<AppAction> {
+    match app.tab {
+        Tab::Queue => ui.library_pane.handle_key(key, app),
+        Tab::Directories => ui.dir_browser_pane.handle_key(key, app),
+        tab => {
+            let count = list_pane::rows_for(app, tab).len();
+            let pane = ui.list_pane_mut(tab);
+            pane.handle_key(key, count)
+                .then(|| list_pane::activate(app, tab, pane.selected))
+                .flatten()
+        }
+    }
+}
+
+/// Route a mouse event to whichever pane the library column is showing.
+fn library_mouse(mouse: MouseEvent, area: Rect, app: &App, ui: &mut Ui) -> Option<AppAction> {
+    match app.tab {
+        Tab::Queue => ui.library_pane.handle_mouse(mouse, area, app),
+        Tab::Directories => ui.dir_browser_pane.handle_mouse(mouse, area, app),
+        tab => {
+            let count = list_pane::rows_for(app, tab).len();
+            ui.list_pane_mut(tab).handle_mouse(mouse, area, count);
+            None
+        }
     }
 }
 
@@ -820,11 +812,9 @@ fn clear_all_hovers(ui: &mut Ui) {
     ui.queue_pane.hover_row = None;
     ui.library_pane.hover_row = None;
     ui.dir_browser_pane.hover_row = None;
-    ui.artists_pane.hover_row = None;
-    ui.albums_pane.hover_row = None;
-    ui.genre_pane.hover_row = None;
-    ui.format_pane.hover_row = None;
-    ui.playlists_pane.hover_row = None;
+    for pane in &mut ui.list_panes {
+        pane.hover_row = None;
+    }
 }
 
 /// Update hover_row state for panes based on mouse position
@@ -863,36 +853,11 @@ fn update_hover(
             && y >= inner.y && y < inner.y + inner.height
             && (scroll + (y - inner.y) as usize) < row_count
         {
-            let visual_row = (y - inner.y) as usize;
+            let row = scroll + (y - inner.y) as usize;
             match app.tab {
-                Tab::Queue => {
-                    let row = ui.library_pane.scroll_offset + visual_row;
-                    ui.library_pane.hover_row = Some(row);
-                }
-                Tab::Directories => {
-                    let row = ui.dir_browser_pane.scroll_offset + visual_row;
-                    ui.dir_browser_pane.hover_row = Some(row);
-                }
-                Tab::Artists => {
-                    let row = ui.artists_pane.scroll_offset + visual_row;
-                    ui.artists_pane.hover_row = Some(row);
-                }
-                Tab::Albums => {
-                    let row = ui.albums_pane.scroll_offset + visual_row;
-                    ui.albums_pane.hover_row = Some(row);
-                }
-                Tab::Genre => {
-                    let row = ui.genre_pane.scroll_offset + visual_row;
-                    ui.genre_pane.hover_row = Some(row);
-                }
-                Tab::Format => {
-                    let row = ui.format_pane.scroll_offset + visual_row;
-                    ui.format_pane.hover_row = Some(row);
-                }
-                Tab::Playlists => {
-                    let row = ui.playlists_pane.scroll_offset + visual_row;
-                    ui.playlists_pane.hover_row = Some(row);
-                }
+                Tab::Queue => ui.library_pane.hover_row = Some(row),
+                Tab::Directories => ui.dir_browser_pane.hover_row = Some(row),
+                tab => ui.list_pane_mut(tab).hover_row = Some(row),
             }
         }
     }

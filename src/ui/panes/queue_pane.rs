@@ -4,11 +4,12 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, Scrollbar, ScrollbarOrientation, ScrollbarState};
 use ratatui::Frame;
-use unicode_width::UnicodeWidthStr;
 
 use crate::app::{App, AppAction};
 use crate::ui::pane::Pane;
 use crate::ui::theme::Theme;
+use crate::ui::text::fit_to_width;
+use crate::ui::text::max_scroll;
 
 const HOVER_BG: Color = Color::Indexed(238); // very dark gray
 
@@ -35,32 +36,6 @@ fn format_color(ext: &str) -> Color {
         "OGG" => Color::Magenta,
         "WAV" | "WAVE" => Color::Blue,
         _ => Color::White,
-    }
-}
-
-/// Truncate a string to fit within `max_width` columns, adding "…" if needed.
-/// Pads with spaces to exactly fill `max_width`.
-fn fit_to_width(s: &str, max_width: usize) -> String {
-    let str_width = UnicodeWidthStr::width(s);
-    if str_width <= max_width {
-        let padding = max_width - str_width;
-        format!("{}{}", s, " ".repeat(padding))
-    } else {
-        let mut w = 0;
-        let mut result = String::new();
-        for ch in s.chars() {
-            let ch_w = unicode_width::UnicodeWidthChar::width(ch).unwrap_or(0);
-            if w + ch_w + 1 > max_width {
-                result.push('\u{2026}'); // …
-                w += 1;
-                break;
-            }
-            w += ch_w;
-            result.push(ch);
-        }
-        let pad = max_width.saturating_sub(w);
-        result.push_str(&" ".repeat(pad));
-        result
     }
 }
 
@@ -94,6 +69,9 @@ impl Pane for QueuePane {
             if inner_height > 0 && app.queue.selected_index >= self.scroll_offset + inner_height {
                 self.scroll_offset = app.queue.selected_index - inner_height + 1;
             }
+            // Keep the viewport full: the scroll handlers clamp to count - 1,
+            // which lets the list scroll until one row sits above a blank screen.
+            self.scroll_offset = self.scroll_offset.min(max_scroll(count, inner_height));
         }
 
         // Column layout: prefix(2) + title(55%) + artist(45%) + ext(4) + gap(1) + dur(5) + trail(1)

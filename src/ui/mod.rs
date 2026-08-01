@@ -1,6 +1,7 @@
 pub mod layout;
 pub mod pane;
 pub mod panes;
+pub mod text;
 pub mod theme;
 pub mod widgets;
 
@@ -14,15 +15,23 @@ use crate::app::App;
 use crate::app::state::{FocusedPane, InfoView, Tab};
 use layout::LayoutAreas;
 use pane::Pane;
-use panes::albums_pane::AlbumsPane;
-use panes::artists_pane::ArtistsPane;
 use panes::dir_browser_pane::DirBrowserPane;
-use panes::format_pane::FormatPane;
-use panes::genre_pane::GenrePane;
 use panes::library_pane::LibraryPane;
+use panes::list_pane::{self, ListPane};
 use panes::lyrics_pane::LyricsPane;
-use panes::playlists_pane::PlaylistsPane;
 use panes::queue_pane::QueuePane;
+
+/// Index into `Ui::list_panes` for each list tab. Queue and Directories have
+/// their own pane types and never reach here.
+pub fn list_slot(tab: Tab) -> usize {
+    match tab {
+        Tab::Artists => 0,
+        Tab::Albums => 1,
+        Tab::Genre => 2,
+        Tab::Format => 3,
+        _ => 4, // Playlists
+    }
+}
 use theme::Theme;
 use widgets::info_pane;
 use widgets::progress_bar;
@@ -34,11 +43,8 @@ pub struct Ui {
     pub library_pane: LibraryPane,
     pub dir_browser_pane: DirBrowserPane,
     pub queue_pane: QueuePane,
-    pub artists_pane: ArtistsPane,
-    pub albums_pane: AlbumsPane,
-    pub genre_pane: GenrePane,
-    pub format_pane: FormatPane,
-    pub playlists_pane: PlaylistsPane,
+    /// One per list tab, keyed by Tab; each keeps its own selection and scroll.
+    pub list_panes: [ListPane; 5],
     pub lyrics_pane: LyricsPane,
     pub last_click: Option<(std::time::Instant, u16, u16)>,
     /// Last known mouse position (column, row) for hover tracking
@@ -100,11 +106,7 @@ impl Ui {
             library_pane: LibraryPane::new(),
             dir_browser_pane: DirBrowserPane::new(music_dir),
             queue_pane: QueuePane::new(),
-            artists_pane: ArtistsPane::new(),
-            albums_pane: AlbumsPane::new(),
-            genre_pane: GenrePane::new(),
-            format_pane: FormatPane::new(),
-            playlists_pane: PlaylistsPane::new(),
+            list_panes: Default::default(),
             lyrics_pane: LyricsPane::new(),
             last_click: None,
             mouse_pos: None,
@@ -165,11 +167,12 @@ impl Ui {
         match app.tab {
             Tab::Queue => self.library_pane.render(frame, areas.library, lib_focused, app, &self.theme),
             Tab::Directories => self.dir_browser_pane.render(frame, areas.library, lib_focused, app, &self.theme),
-            Tab::Artists => self.artists_pane.render(frame, areas.library, lib_focused, app, &self.theme),
-            Tab::Albums => self.albums_pane.render(frame, areas.library, lib_focused, app, &self.theme),
-            Tab::Genre => self.genre_pane.render(frame, areas.library, lib_focused, app, &self.theme),
-            Tab::Format => self.format_pane.render(frame, areas.library, lib_focused, app, &self.theme),
-            Tab::Playlists => self.playlists_pane.render(frame, areas.library, lib_focused, app, &self.theme),
+            tab => {
+                let rows = list_pane::rows_for(app, tab);
+                let theme = &self.theme;
+                self.list_panes[list_slot(tab)]
+                    .render(frame, areas.library, lib_focused, theme, &rows);
+            }
         }
 
         // Center pane (Queue)
@@ -237,16 +240,19 @@ impl Ui {
         }
     }
 
+    /// The list pane backing `tab`. Panics only for Queue/Directories, which
+    /// have their own pane types — `list_slot` maps those to Playlists, so
+    /// callers must check the tab first.
+    pub fn list_pane_mut(&mut self, tab: Tab) -> &mut ListPane {
+        &mut self.list_panes[list_slot(tab)]
+    }
+
     /// Scroll offset of whichever pane the library column is currently showing.
     pub fn library_pane_scroll(&self, app: &App) -> usize {
         match app.tab {
             Tab::Queue => self.library_pane.scroll_offset,
             Tab::Directories => self.dir_browser_pane.scroll_offset,
-            Tab::Artists => self.artists_pane.scroll_offset,
-            Tab::Albums => self.albums_pane.scroll_offset,
-            Tab::Genre => self.genre_pane.scroll_offset,
-            Tab::Format => self.format_pane.scroll_offset,
-            Tab::Playlists => self.playlists_pane.scroll_offset,
+            tab => self.list_panes[list_slot(tab)].scroll_offset,
         }
     }
 
@@ -269,49 +275,11 @@ impl Ui {
     }
 
     pub fn clamp_selections(&mut self, app: &App) {
-        let artists_len = app.library.get_artists().len();
-        if artists_len == 0 {
-            self.artists_pane.selected = 0;
-            self.artists_pane.scroll_offset = 0;
-        } else {
-            self.artists_pane.selected = self.artists_pane.selected.min(artists_len - 1);
-            self.artists_pane.scroll_offset = self.artists_pane.scroll_offset.min(artists_len - 1);
-        }
-
-        let albums_len = app.library.get_albums().len();
-        if albums_len == 0 {
-            self.albums_pane.selected = 0;
-            self.albums_pane.scroll_offset = 0;
-        } else {
-            self.albums_pane.selected = self.albums_pane.selected.min(albums_len - 1);
-            self.albums_pane.scroll_offset = self.albums_pane.scroll_offset.min(albums_len - 1);
-        }
-
-        let genres_len = app.library.get_genres().len();
-        if genres_len == 0 {
-            self.genre_pane.selected = 0;
-            self.genre_pane.scroll_offset = 0;
-        } else {
-            self.genre_pane.selected = self.genre_pane.selected.min(genres_len - 1);
-            self.genre_pane.scroll_offset = self.genre_pane.scroll_offset.min(genres_len - 1);
-        }
-
-        let formats_len = app.library.get_formats().len();
-        if formats_len == 0 {
-            self.format_pane.selected = 0;
-            self.format_pane.scroll_offset = 0;
-        } else {
-            self.format_pane.selected = self.format_pane.selected.min(formats_len - 1);
-            self.format_pane.scroll_offset = self.format_pane.scroll_offset.min(formats_len - 1);
-        }
-
-        let playlists_len = app.playlists.len();
-        if playlists_len == 0 {
-            self.playlists_pane.selected = 0;
-            self.playlists_pane.scroll_offset = 0;
-        } else {
-            self.playlists_pane.selected = self.playlists_pane.selected.min(playlists_len - 1);
-            self.playlists_pane.scroll_offset = self.playlists_pane.scroll_offset.min(playlists_len - 1);
+        for tab in [Tab::Artists, Tab::Albums, Tab::Genre, Tab::Format, Tab::Playlists] {
+            let len = list_pane::rows_for(app, tab).len();
+            let pane = &mut self.list_panes[list_slot(tab)];
+            pane.selected = pane.selected.min(len.saturating_sub(1));
+            pane.scroll_offset = pane.scroll_offset.min(len.saturating_sub(1));
         }
 
         // Reset library/dir browser to top since track indices changed

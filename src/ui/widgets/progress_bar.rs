@@ -7,6 +7,7 @@ use ratatui::Frame;
 use crate::app::App;
 use crate::app::state::PlayState;
 use crate::ui::theme::Theme;
+use crate::ui::text::format_time;
 
 pub fn render_progress_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let block = Block::default()
@@ -82,9 +83,3 @@ pub fn progress_gauge_area(area: Rect) -> Rect {
     cols[1]
 }
 
-fn format_time(secs: f64) -> String {
-    let total = secs as u64;
-    let m = total / 60;
-    let s = total % 60;
-    format!("{}:{:02}", m, s)
-}

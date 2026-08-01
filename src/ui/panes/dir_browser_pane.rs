@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use crate::app::{App, AppAction};
 use crate::ui::pane::Pane;
 use crate::ui::theme::Theme;
+use crate::ui::text::max_scroll;
 
 const HOVER_BG: Color = Color::Indexed(238);
 
@@ -84,6 +85,9 @@ impl Pane for DirBrowserPane {
             if inner_height > 0 && self.selected >= self.scroll_offset + inner_height {
                 self.scroll_offset = self.selected - inner_height + 1;
             }
+            // Keep the viewport full: the scroll handlers clamp to count - 1,
+            // which lets the list scroll until one row sits above a blank screen.
+            self.scroll_offset = self.scroll_offset.min(max_scroll(count, inner_height));
         }
 
         let has_scrollbar = count > inner_height;

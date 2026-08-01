@@ -8,6 +8,7 @@ use ratatui::Frame;
 use crate::app::{App, AppAction};
 use crate::ui::pane::Pane;
 use crate::ui::theme::Theme;
+use crate::ui::text::max_scroll;
 
 /// An entry in the flattened library list
 #[derive(Debug, Clone)]
@@ -124,6 +125,9 @@ impl Pane for LibraryPane {
             if inner_height > 0 && self.selected >= self.scroll_offset + inner_height {
                 self.scroll_offset = self.selected - inner_height + 1;
             }
+            // Keep the viewport full: the scroll handlers clamp to count - 1,
+            // which lets the list scroll until one row sits above a blank screen.
+            self.scroll_offset = self.scroll_offset.min(max_scroll(count, inner_height));
         }
 
         let has_scrollbar = count > inner_height;
@@ -349,8 +353,8 @@ impl Pane for LibraryPane {
                             None
                         }
                     }
-                    LibraryEntry::Album { name, .. } => {
-                        let tracks = app.library.get_tracks_by_album(name);
+                    LibraryEntry::Album { name, artist } => {
+                        let tracks = app.library.get_tracks_by_album(name, artist);
                         if !tracks.is_empty() {
                             Some(AppAction::AddToQueue(tracks))
                         } else {
