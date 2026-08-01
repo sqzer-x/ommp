@@ -17,6 +17,11 @@ sqzass doctor -i "$REPO/site"
 git -C "$REPO" worktree remove "$WORK" --force 2>/dev/null || true
 rm -rf "$WORK"
 git -C "$REPO" fetch origin gh-pages
+# Point the local branch at the remote before checking it out. GitHub writes its
+# own commits to this branch whenever the Pages custom domain is changed, so a
+# local ref that has not been moved forward will fork the history and the push
+# will be rejected.
+git -C "$REPO" branch -f gh-pages origin/gh-pages
 git -C "$REPO" worktree add "$WORK" gh-pages
 
 # Mirror rather than merge: files deleted from the site must disappear here too.
@@ -27,6 +32,7 @@ if git -C "$WORK" diff --cached --quiet; then
   echo "nothing changed"
 else
   git -C "$WORK" commit -q -m "Deploy the landing page"
+  # No -q, and no success message unless the push actually returned 0.
   git -C "$WORK" push origin gh-pages
   echo "published → https://ommp.sqzer.com/"
 fi
