@@ -19,6 +19,12 @@ use panes::list_pane::{self, ListPane};
 use panes::track_info_pane::TrackInfoPane;
 use panes::queue_pane::QueuePane;
 
+/// Splash timeline, in seconds: fade in, hold, then fade out until the end.
+/// The hold is skipped as soon as the library is ready.
+pub const SPLASH_FADE_IN: f32 = 0.5;
+pub const SPLASH_FADE_OUT_AT: f32 = 1.5;
+pub const SPLASH_END: f32 = 2.0;
+
 /// Index into `Ui::list_panes` for each list tab. Queue and Directories have
 /// their own pane types and never reach here.
 pub fn list_slot(tab: Tab) -> usize {
@@ -129,18 +135,37 @@ impl Ui {
         }
     }
 
+    /// Skip the splash forward to the start of its fade-out, if it has not got
+    /// there already. Used when the scan finishes and when a key is pressed —
+    /// the animation still completes, it just stops holding.
+    pub fn begin_splash_fade_out(&mut self) {
+        if !self.show_splash {
+            return;
+        }
+        let Some(start) = self.splash_start else { return };
+        if start.elapsed().as_secs_f32() >= SPLASH_FADE_OUT_AT {
+            return;
+        }
+        // checked_sub because Instant is CLOCK_MONOTONIC: started within
+        // SPLASH_FADE_OUT_AT of boot, plain `-` panics.
+        if let Some(t) = std::time::Instant::now()
+            .checked_sub(std::time::Duration::from_secs_f32(SPLASH_FADE_OUT_AT))
+        {
+            self.splash_start = Some(t);
+        }
+    }
+
     pub fn render(&mut self, frame: &mut Frame, app: &App) {
         if self.show_splash {
-            // Timeline: 0–0.5s fade-in, 0.5–1.5s hold, 1.5–2.0s fade-out
             let elapsed = self.splash_start
                 .map(|s| s.elapsed().as_secs_f32())
-                .unwrap_or(2.0);
-            let opacity = if elapsed < 0.5 {
-                elapsed / 0.5
-            } else if elapsed < 1.5 {
+                .unwrap_or(SPLASH_END);
+            let opacity = if elapsed < SPLASH_FADE_IN {
+                elapsed / SPLASH_FADE_IN
+            } else if elapsed < SPLASH_FADE_OUT_AT {
                 1.0
             } else {
-                (1.0 - (elapsed - 1.5) / 0.5).max(0.0)
+                (1.0 - (elapsed - SPLASH_FADE_OUT_AT) / (SPLASH_END - SPLASH_FADE_OUT_AT)).max(0.0)
             };
             about_modal::render_splash_screen(frame, frame.area(), &self.theme, opacity);
             return;
@@ -275,5 +300,54 @@ impl Ui {
         } else {
             self.queue_pane.scroll_offset = self.queue_pane.scroll_offset.min(queue_len - 1);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ui() -> Ui {
+        Ui::new(
+            std::path::PathBuf::from("."),
+            ratatui_image::picker::Picker::from_fontsize((8, 16)),
+        )
+    }
+
+    fn elapsed(ui: &Ui) -> f32 {
+        ui.splash_start.map(|s| s.elapsed().as_secs_f32()).unwrap_or(0.0)
+    }
+
+    #[test]
+    fn finishing_the_scan_skips_the_splash_hold() {
+        let mut ui = ui();
+        assert!(ui.show_splash);
+        assert!(elapsed(&ui) < SPLASH_FADE_OUT_AT);
+
+        ui.begin_splash_fade_out();
+
+        // Straight to the fade-out rather than sitting through the hold, which
+        // with a warm cache is the entire startup wait.
+        assert!(elapsed(&ui) >= SPLASH_FADE_OUT_AT);
+        assert!(elapsed(&ui) < SPLASH_END, "the fade-out still plays");
+    }
+
+    #[test]
+    fn skipping_twice_does_not_cut_the_fade_out_short() {
+        let mut ui = ui();
+        ui.begin_splash_fade_out();
+        let first = elapsed(&ui);
+        ui.begin_splash_fade_out();
+        assert!(elapsed(&ui) >= first, "must not jump past the end");
+        assert!(elapsed(&ui) < SPLASH_END);
+    }
+
+    #[test]
+    fn skipping_a_dismissed_splash_is_a_no_op() {
+        let mut ui = ui();
+        ui.show_splash = false;
+        ui.splash_start = None;
+        ui.begin_splash_fade_out();
+        assert!(ui.splash_start.is_none());
     }
 }

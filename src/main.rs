@@ -79,6 +79,12 @@ fn main() -> Result<()> {
 fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> {
     let music_dir = dirs_music_path();
 
+    // Start scanning first: querying the terminal for its image protocol and
+    // opening the audio device both round-trip to something outside this
+    // process, and the scan has no reason to wait for either.
+    let scan_dir = music_dir.clone();
+    let scan_handle = std::thread::spawn(move || library::Library::scan(&scan_dir));
+
     // Detect terminal image protocol BEFORE input thread steals stdin
     let picker = ratatui_image::picker::Picker::from_query_stdio()
         .unwrap_or_else(|_| ratatui_image::picker::Picker::from_fontsize((8, 16)));
@@ -97,12 +103,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
     let mut app = App::new(music_dir.clone());
     app.set_audio_engine(audio_engine);
     app.set_event_tx(event_tx.clone());
-
-    // Scan library in background
-    let scan_dir = music_dir.clone();
-    let scan_handle = std::thread::spawn(move || {
-        library::Library::scan(&scan_dir)
-    });
 
     // UI
     let mut ui = ui::Ui::new(music_dir.clone(), picker);
@@ -175,6 +175,11 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                                 scan_done = true;
                                 app.initial_scan_complete = true;
                                 dirty = true;
+                                // The splash exists to cover the scan. With the
+                                // cache that takes tens of milliseconds, so
+                                // sitting through the rest of a fixed two-second
+                                // timeline is the whole startup wait.
+                                ui.begin_splash_fade_out();
                                 _watcher = library::watcher::spawn_watcher(&music_dir, event_tx.clone());
                             }
                             Err(_) => {
@@ -200,19 +205,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                     Event::Key(key) => {
                         // On key press during splash: jump to fade-out phase
                         if ui.show_splash {
-                            if let Some(start) = ui.splash_start {
-                                let elapsed = start.elapsed().as_secs_f32();
-                                if elapsed < 1.5 {
-                                    // Jump timeline to start of fade-out (1.5s mark).
-                                    // checked_sub because Instant is CLOCK_MONOTONIC:
-                                    // started within 1.5s of boot, plain `-` panics.
-                                    if let Some(t) = std::time::Instant::now()
-                                        .checked_sub(Duration::from_millis(1500))
-                                    {
-                                        ui.splash_start = Some(t);
-                                    }
-                                }
-                            }
+                            ui.begin_splash_fade_out();
                             vec![]
                         } else {
                         // Handle queue selection directly for playlist focus
@@ -247,7 +240,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                         // Auto-dismiss splash after full timeline (2s)
                         if ui.show_splash {
                             if let Some(start) = ui.splash_start {
-                                if start.elapsed().as_secs_f32() >= 2.0 {
+                                if start.elapsed().as_secs_f32() >= ui::SPLASH_END {
                                     ui.show_splash = false;
                                     ui.splash_start = None;
                                 }
