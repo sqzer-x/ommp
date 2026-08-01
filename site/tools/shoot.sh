@@ -5,15 +5,11 @@
 # under a graphics protocol, and Ghostty is the only installed terminal that
 # speaks one. Anything else would show the block-character fallback.
 #
-# Two font sizes, because the two kinds of shot want opposite things:
-#
-#   14  the wide shot. Everything fits — full album names, and all thirteen
-#       fields of the info panel including the sample rate and bit depth.
-#       At 20 the panel stops at "Disc #" and the best detail is lost.
-#   20  the modal shots. A modal is sized as a percentage of the terminal but
-#       its contents are a fixed number of characters, so a wider terminal just
-#       adds empty space inside it. 20 is where the columns sit tight, and where
-#       the keybindings still read at the size the page shows them.
+# One font size for every shot. 14 is the density the program actually runs at
+# here: everything fits, including all thirteen fields of the info panel with
+# the sample rate and bit depth. Shooting the modals larger made the app look
+# stretched next to the wide shot, which is worse than a modal with some room
+# inside it.
 #
 # The window is fullscreen for about fifteen seconds and then closes. Your
 # player settings and your default sink's mute state are backed up and
@@ -87,7 +83,7 @@ pactl set-sink-mute "$SINK" 0
 # that reads Stopped next to two that read Playing looks like a mistake.
 python3 "$HERE/prep-state.py" "$STATE"
 pactl set-sink-mute "$SINK" 1
-launch 20
+launch 14
 wtype " "
 sleep 8
 wtype -M ctrl -k h -m ctrl; sleep 1.2; grim -o "$MONITOR" "$RAW/02-help.png"
