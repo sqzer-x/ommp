@@ -159,29 +159,39 @@ a:hover { color: var(--cyan); }
   color: var(--ink-2); margin-bottom: .4rem;
 }
 
-/* The box is sized by the command, and the button sits outside it, so nothing
-   moves when you copy — only the icon changes. */
-.cmdline { display: flex; align-items: stretch; gap: .5rem; }
+/* One box, holding the command and the button that copies it. The border and
+   the background belong to the box, not to either thing inside it, and the
+   feedback is the icon changing, so nothing resizes when you copy. */
+.cmdline {
+  display: flex; align-items: center; gap: .5rem;
+  width: max-content; max-width: 100%;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 4px;
+  padding: .35rem .4rem .35rem .9rem;
+  transition: border-color .15s;
+}
+.cmdline:focus-within { border-color: var(--sky); }
 .cmd {
+  /* min-width:auto would refuse to shrink below the command's full width and
+     push the box past a narrow viewport. */
+  flex: 1 1 auto; min-width: 0; overflow-x: auto;
   font-family: var(--mono); font-size: .9375rem;
-  background: var(--panel); border: 1px solid var(--line);
-  padding: .7rem 1rem; border-radius: 4px;
-  color: var(--ink); white-space: nowrap; overflow-x: auto;
+  color: var(--ink); white-space: nowrap;
+  scrollbar-width: thin; scrollbar-color: var(--line) transparent;
 }
 /* The prompt lives in a pseudo-element, which never reaches the clipboard. */
 .cmd::before { content: "$ "; color: var(--dim); }
 
 .cmd-copy {
   flex: none; display: grid; place-items: center;
-  width: 2.5rem; padding: 0;
-  background: none; border: 1px solid var(--line); border-radius: 4px;
-  color: var(--ink-2); cursor: pointer;
-  transition: color .15s, border-color .15s, background .15s;
+  width: 1.9rem; height: 1.9rem; padding: 0;
+  background: none; border: 0; border-radius: 3px;
+  color: var(--dim); cursor: pointer;
+  transition: color .15s, background .15s;
 }
-.cmd-copy:hover { color: var(--ink); border-color: var(--sky); background: #ffffff0a; }
+.cmd-copy:hover { color: var(--ink); background: #ffffff12; }
 .cmd-copy svg { width: 15px; height: 15px; }
 .cmd-copy svg:last-child { display: none; }
-.cmd-copy.is-copied { color: var(--playing); border-color: var(--playing); }
+.cmd-copy.is-copied { color: var(--playing); }
 .cmd-copy.is-copied svg:first-child { display: none; }
 .cmd-copy.is-copied svg:last-child { display: block; }
 
@@ -256,12 +266,13 @@ a:hover { color: var(--cyan); }
    argument is made by the ratio, so nothing here is decorated further. */
 .setup { font-size: .9375rem; }
 .setup-skipped { list-style: none; margin: 0 0 1.5rem; padding: 0; display: grid; gap: .7rem; }
-.setup-skipped li {
-  position: relative; width: max-content; max-width: 100%;
-  color: var(--dim);
-}
-.setup-skipped li::after {
-  content: ""; position: absolute; inset-inline: 0; top: .62em;
+.setup-skipped li { color: var(--dim); }
+/* Drawn on the span rather than the list item: an inline box is the height of
+   the text itself, so 50% of it lands on the middle of the letters instead of
+   the middle of the line box, which sits higher. */
+.setup-skipped span { position: relative; }
+.setup-skipped span::after {
+  content: ""; position: absolute; inset-inline: 0; top: 50%;
   height: 1px; background: var(--pink);
   transform-origin: left;
 }
@@ -270,11 +281,11 @@ a:hover { color: var(--cyan); }
    at a time as the section comes into view. Without it they are simply already
    crossed out, which is the state that makes the point. */
 .setup-armed .setup-skipped li { color: var(--ink-2); transition: color .4s ease; }
-.setup-armed .setup-skipped li::after { transform: scaleX(0); transition: transform .45s ease; }
+.setup-armed .setup-skipped span::after { transform: scaleX(0); transition: transform .45s ease; }
 .setup-armed .setup-skipped li.is-struck { color: var(--dim); }
-.setup-armed .setup-skipped li.is-struck::after { transform: scaleX(1); }
+.setup-armed .setup-skipped li.is-struck span::after { transform: scaleX(1); }
 @media (prefers-reduced-motion: reduce) {
-  .setup-armed .setup-skipped li::after { transition: none; }
+  .setup-armed .setup-skipped span::after { transition: none; }
 }
 .setup-real {
   margin: 0; font-weight: 700; font-size: 1.5rem;
