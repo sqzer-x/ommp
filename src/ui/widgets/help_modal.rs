@@ -36,7 +36,7 @@ const NAVIGATION: &[(&str, &str)] = &[
     ("d", "Remove from queue"),
     ("c", "Clear queue"),
     ("", ""),
-    ("Ctrl+drag border", "Resize panels"),
+    ("Ctrl+drag", "Resize panels"),
     ("Double-click", "Play queue track"),
     ("", ""),
     ("Esc", "Close modal"),
@@ -78,7 +78,7 @@ fn render_column(bindings: &[(&str, &str)], theme: &Theme) -> Vec<Line<'static>>
             }
             Line::from(vec![
                 Span::styled(
-                    format!("  {:18}", key),
+                    format!("  {:16}", key),
                     Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(desc.to_string(), Style::default().fg(theme.fg)),

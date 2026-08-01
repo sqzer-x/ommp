@@ -28,6 +28,6 @@ if git -C "$WORK" diff --cached --quiet; then
 else
   git -C "$WORK" commit -q -m "Deploy the landing page"
   git -C "$WORK" push origin gh-pages
-  echo "published → https://sqzer-x.github.io/ommp/"
+  echo "published → https://ommp.sqzer.com/"
 fi
 git -C "$REPO" worktree remove "$WORK" --force

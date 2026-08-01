@@ -14,10 +14,6 @@ install_primary       = "yay -S ommp"
 install_secondary_label = "Anywhere else"
 install_secondary       = "cargo install ommp"
 
-shot_main   = "img/01-main.png"
-shot_help   = "img/02-help.png"
-shot_search = "img/03-search.png"
-
 # Each feature is keyed to the accent colour its tab actually uses in
 # src/ui/widgets/tab_bar.rs, so the page and the app agree.
 [[extra.features]]

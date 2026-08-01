@@ -160,6 +160,7 @@ a:hover { color: var(--cyan); }
   margin: clamp(3rem, 7vw, 5rem) auto 0;
 }
 .shot-hero img { box-shadow: 0 2rem 5rem -1.5rem #00000099; }
+.shot-detail img { box-shadow: 0 1.5rem 4rem -2rem #00000099; }
 
 /* ── Bands ────────────────────────────────────────────────────────── */
 
@@ -216,11 +217,18 @@ a:hover { color: var(--cyan); }
 
 /* ── Split sections ───────────────────────────────────────────────── */
 
-.split { display: grid; gap: clamp(2rem, 5vw, 3.5rem); align-items: center; }
-@media (min-width: 56rem) {
-  .split { grid-template-columns: 22rem 1fr; }
-  .split-reverse .split-text { order: 2; }
+/* Copy beside its list, and the screenshot underneath at the full width of the
+   wrap. These shots are close-ups of a modal whose contents are a fixed number
+   of characters — squeezed into a column beside the copy they are simply too
+   small to read, which defeats the point of showing them. */
+.split {
+  display: grid; gap: clamp(2rem, 5vw, 3.5rem); align-items: start;
+  margin-bottom: clamp(2.25rem, 4vw, 3rem);
 }
+@media (min-width: 56rem) {
+  .split { grid-template-columns: 1fr minmax(16rem, 22rem); }
+}
+.split-text .sec-lede { margin-bottom: 0; }
 
 .filters { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
 .filters code {
@@ -258,6 +266,10 @@ kbd {
   display: grid; gap: 1rem; margin-bottom: 2rem;
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
 }
+/* The clone URL is longer than a third of the wrap. Scrolling it inside the
+   card hides the end behind no affordance at all, so wrap it instead — the
+   whole string is what gets copied either way. */
+.install-card .cmd { white-space: normal; overflow-wrap: anywhere; }
 
 /* ── Footer ───────────────────────────────────────────────────────── */
 

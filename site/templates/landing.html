@@ -13,7 +13,7 @@
 <meta property="og:title" content="{{ site.title }} — Oh My Music Player">
 <meta property="og:description" content="{{ page.description }}">
 <meta property="og:url" content="{{ page.permalink }}">
-<meta property="og:image" content="{{ site.origin }}{{ asset('img/01-main.png') }}">
+<meta property="og:image" content="{{ site.origin }}{{ asset('img/og.png') }}">
 <meta name="twitter:card" content="summary_large_image">
 
 <link rel="icon" href="{{ asset('img/logo.png') }}">
@@ -56,8 +56,8 @@
   </div>
 
   <figure class="shot shot-hero">
-    <img src="{{ asset('img/01-main.png') }}" alt="ommp playing a track: library on the left, queue in the middle, album art and track details on the right"
-         width="2400" height="1350" fetchpriority="high">
+    <img src="{{ asset('img/01-main.avif') }}" alt="ommp playing a track: library on the left, queue in the middle, album art and track details on the right"
+         width="3840" height="2160" fetchpriority="high">
   </figure>
 </header>
 
@@ -98,10 +98,12 @@
 
 <!-- ── Search ────────────────────────────────────────────────────────── -->
 <section class="band" data-section="Search">
-  <div class="wrap split">
-    <div class="split-text">
-      <h2 class="sec-title">Find it while you type</h2>
-      <p class="sec-lede">Results narrow on every keystroke. Narrow further with a field, or by format.</p>
+  <div class="wrap">
+    <div class="split">
+      <div class="split-text">
+        <h2 class="sec-title">Find it while you type</h2>
+        <p class="sec-lede">Results narrow on every keystroke. Narrow further with a field, or by format.</p>
+      </div>
       <ul class="filters">
         <li><code>artist:yorushika</code></li>
         <li><code>album:elma</code></li>
@@ -109,28 +111,30 @@
         <li><code>*.flac</code></li>
       </ul>
     </div>
-    <figure class="shot">
-      <img src="{{ asset('img/03-search.png') }}" alt="The search overlay filtering a library down to fifty of fifty-two tracks"
-           width="2400" height="1350" loading="lazy">
+    <figure class="shot shot-detail">
+      <img src="{{ asset('img/03-search.avif') }}" alt="The search overlay filtering a library down to fifty of fifty-two tracks"
+           width="2400" height="1560" loading="lazy">
     </figure>
   </div>
 </section>
 
 <!-- ── Keys ──────────────────────────────────────────────────────────── -->
 <section class="band band-alt" data-section="Keys">
-  <div class="wrap split split-reverse">
-    <div class="split-text">
-      <h2 class="sec-title">Keys where you expect them</h2>
-      <p class="sec-lede">Vim motions for the lists, media keys for the music. The mouse works too — click a tab, double-click a track, <kbd>Ctrl</kbd>-drag a border to resize.</p>
+  <div class="wrap">
+    <div class="split">
+      <div class="split-text">
+        <h2 class="sec-title">Keys where you expect them</h2>
+        <p class="sec-lede">Vim motions for the lists, media keys for the music. The mouse works too — click a tab, double-click a track, <kbd>Ctrl</kbd>-drag a border to resize.</p>
+      </div>
       <ul class="keys">
         {%- for k in x.keys %}
         <li><kbd>{{ k.key }}</kbd><span>{{ k.desc }}</span></li>
         {%- endfor %}
       </ul>
     </div>
-    <figure class="shot">
-      <img src="{{ asset('img/02-help.png') }}" alt="The keybinding overlay, two columns covering playback and navigation"
-           width="2400" height="1350" loading="lazy">
+    <figure class="shot shot-detail">
+      <img src="{{ asset('img/02-help.avif') }}" alt="The keybinding overlay, two columns covering playback and navigation"
+           width="3100" height="1700" loading="lazy">
     </figure>
   </div>
 </section>
