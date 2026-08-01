@@ -96,10 +96,19 @@ pub fn render_playlist_modal(
             let current_track_idx = app.queue.current_index
                 .and_then(|qi| app.queue.tracks.get(qi).copied());
 
+            // Scroll the selection into view. Without this the list was drawn
+            // from the top and simply clipped, so on a short terminal `j` walked
+            // the highlight off the bottom and Enter toggled a playlist the user
+            // could not see.
+            let viewport = (inner.height as usize).saturating_sub(1).max(1);
+            let scroll = selected.saturating_sub(viewport.saturating_sub(1));
+
             let items: Vec<ListItem> = app
                 .playlists
                 .iter()
                 .enumerate()
+                .skip(scroll)
+                .take(viewport)
                 .map(|(i, pl)| {
                     let is_selected = i == selected;
                     let already_in = current_track_idx

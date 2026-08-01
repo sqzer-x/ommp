@@ -9,17 +9,19 @@ use crate::ui::pane::Pane;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::info_pane;
 
-pub struct LyricsPane {
+/// The bottom-right pane. It renders track metadata, not lyrics — the name is
+/// left over from a feature that was removed.
+pub struct TrackInfoPane {
     pub scroll_offset: u16,
 }
 
-impl LyricsPane {
+impl TrackInfoPane {
     pub fn new() -> Self {
         Self { scroll_offset: 0 }
     }
 }
 
-impl Pane for LyricsPane {
+impl Pane for TrackInfoPane {
     fn render(&mut self, frame: &mut Frame, area: Rect, focused: bool, app: &App, theme: &Theme) {
         let border_color = if focused {
             theme.border_focused
@@ -34,7 +36,7 @@ impl Pane for LyricsPane {
         let inner = block.inner(area);
         frame.render_widget(block, area);
 
-        info_pane::render_track_info(frame, inner, app, theme);
+        info_pane::render_track_info(frame, inner, app, theme, self.scroll_offset);
     }
 
     fn handle_key(&mut self, key: KeyEvent, _app: &App) -> Option<AppAction> {

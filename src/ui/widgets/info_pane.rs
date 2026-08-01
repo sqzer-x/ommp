@@ -264,7 +264,7 @@ fn render_album_art(frame: &mut Frame, area: Rect, app: &App, cache: &mut AlbumA
 
 // ── Track Info View ──────────────────────────────────────────────────────
 
-pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme, scroll: u16) {
     let track = match app.current_track() {
         Some(t) => t,
         None => {
@@ -358,7 +358,13 @@ pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         })
         .collect();
 
-    let para = Paragraph::new(lines).wrap(Wrap { trim: false });
+    // Honour the pane's scroll offset. It was maintained by seven handlers and
+    // never read, so j/k did nothing while the field list — now 13 rows — did
+    // not fit the pane's default height.
+    let max_scroll = (lines.len() as u16).saturating_sub(area.height);
+    let para = Paragraph::new(lines)
+        .wrap(Wrap { trim: false })
+        .scroll((scroll.min(max_scroll), 0));
     frame.render_widget(para, area);
 }
 

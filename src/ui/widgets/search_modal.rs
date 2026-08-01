@@ -60,8 +60,16 @@ pub fn render_search_modal(
         chunks[1],
     );
 
-    // Results list
-    let result_height = chunks[2].height as usize;
+    // Results list. `title_bottom` on the list's block reserves a row even
+    // though the block is borderless, so one fewer result is drawn than
+    // chunks[2].height — reporting the full height back made keyboard
+    // auto-scroll stop one short and mapped clicks on the count footer to a row
+    // that isn't there.
+    let result_height = (chunks[2].height as usize).saturating_sub(1);
+    let result_area = Rect {
+        height: result_height as u16,
+        ..chunks[2]
+    };
     let result_width = chunks[2].width as usize;
 
     if results.is_empty() {
@@ -148,6 +156,6 @@ pub fn render_search_modal(
         }
     }
 
-    (result_height, chunks[2])
+    (result_height, result_area)
 }
 

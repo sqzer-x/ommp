@@ -1,39 +1,51 @@
-use ratatui::layout::Rect;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 use ratatui::Frame;
 
-use crate::ui::theme::Theme;
 use crate::ui::text::centered_rect;
+use crate::ui::theme::Theme;
 
-const KEYBINDINGS: &[(&str, &str)] = &[
+/// Left column: playback and global commands.
+const PLAYBACK: &[(&str, &str)] = &[
+    ("Space", "Play / Pause"),
+    ("n / N", "Next / Previous track"),
+    ("+ / -", "Volume up / down"),
+    ("\u{2192} / \u{2190}", "Seek forward / back"),
+    ("s", "Toggle shuffle"),
+    ("r", "Cycle repeat mode"),
+    ("b", "Add to playlist"),
+    ("p", "Info panel: clock / art"),
+    ("", ""),
     ("Ctrl+E, s", "Search"),
     ("Ctrl+E, h", "Help (this modal)"),
     ("Ctrl+E, r", "Resize mode"),
     ("Ctrl+E, i", "About OMMP"),
     ("Ctrl+E, l", "Sync library"),
-    ("", ""),
-    ("Space", "Play / Pause"),
-    ("n / N", "Next / Previous track"),
-    ("+ / -", "Volume up / down"),
-    ("\u{2192} / \u{2190}", "Seek forward / backward"),
-    ("s", "Toggle shuffle"),
-    ("r", "Cycle repeat mode"),
-    ("b", "Add to playlist"),
-    ("", ""),
+];
+
+/// Right column: navigation and the queue.
+const NAVIGATION: &[(&str, &str)] = &[
     ("1-7", "Switch tab"),
     ("Tab / Shift+Tab", "Cycle pane focus"),
+    ("h / l", "Focus prev / next pane"),
     ("j / k", "Navigate list"),
     ("g / G", "Jump to first / last"),
     ("Enter", "Select / Activate"),
+    ("", ""),
     ("d", "Remove from queue"),
     ("c", "Clear queue"),
+    ("", ""),
+    ("Esc", "Close modal"),
     ("q", "Quit"),
+    ("Ctrl+C", "Quit"),
 ];
 
 pub fn render_help_modal(frame: &mut Frame, area: Rect, theme: &Theme) {
-    let modal = centered_rect(50, 70, area);
+    // Two columns: a single list of 27 entries does not fit an 80x24 terminal,
+    // and there is no scrolling — the tail, including `q: Quit`, was simply cut.
+    let modal = centered_rect(72, 70, area);
 
     frame.render_widget(Clear, modal);
 
@@ -46,27 +58,30 @@ pub fn render_help_modal(frame: &mut Frame, area: Rect, theme: &Theme) {
     let inner = block.inner(modal);
     frame.render_widget(block, modal);
 
-    let lines: Vec<Line> = KEYBINDINGS
+    let columns = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(inner);
+
+    for (bindings, area) in [(PLAYBACK, columns[0]), (NAVIGATION, columns[1])] {
+        frame.render_widget(Paragraph::new(render_column(bindings, theme)), area);
+    }
+}
+
+fn render_column(bindings: &[(&str, &str)], theme: &Theme) -> Vec<Line<'static>> {
+    bindings
         .iter()
         .map(|(key, desc)| {
             if key.is_empty() {
-                Line::from("")
-            } else {
-                Line::from(vec![
-                    Span::styled(
-                        format!("  {:20}", key),
-                        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
-                    ),
-                    Span::styled(
-                        desc.to_string(),
-                        Style::default().fg(theme.fg),
-                    ),
-                ])
+                return Line::from("");
             }
+            Line::from(vec![
+                Span::styled(
+                    format!("  {:16}", key),
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(desc.to_string(), Style::default().fg(theme.fg)),
+            ])
         })
-        .collect();
-
-    let help_text = Paragraph::new(lines);
-    frame.render_widget(help_text, inner);
+        .collect()
 }
-

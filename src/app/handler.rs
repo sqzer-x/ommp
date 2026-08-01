@@ -401,7 +401,7 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
                 _ => ui.queue_pane.handle_key(key, app),
             }
         }
-        FocusedPane::Lyrics => ui.lyrics_pane.handle_key(key, app),
+        FocusedPane::Lyrics => ui.track_info_pane.handle_key(key, app),
     };
 
     // Auto-focus to Queue pane when adding tracks from Library
@@ -618,7 +618,7 @@ pub fn handle_mouse_event(
 
             // Tab bar click
             if y >= areas.tab_bar.y && y < areas.tab_bar.y + areas.tab_bar.height {
-                if let Some(tab_idx) = tab_bar::tab_hit_test(areas.tab_bar, x) {
+                if let Some(tab_idx) = tab_bar::tab_hit_test(areas.tab_bar, x, y) {
                     actions.push(AppAction::SwitchTab(Tab::from_index(tab_idx)));
                 }
                 return actions;
@@ -684,7 +684,7 @@ pub fn handle_mouse_event(
                     }
                 }
             } else if in_lyrics {
-                if let Some(a) = ui.lyrics_pane.handle_mouse(mouse, areas.lyrics, app) {
+                if let Some(a) = ui.track_info_pane.handle_mouse(mouse, areas.lyrics, app) {
                     actions.push(a);
                 }
             }
@@ -699,7 +699,7 @@ pub fn handle_mouse_event(
                     actions.push(a);
                 }
             } else if in_lyrics {
-                if let Some(a) = ui.lyrics_pane.handle_mouse(mouse, areas.lyrics, app) {
+                if let Some(a) = ui.track_info_pane.handle_mouse(mouse, areas.lyrics, app) {
                     actions.push(a);
                 }
             }
@@ -801,7 +801,7 @@ impl PaneHit {
 
 fn update_tab_hover(ui: &mut Ui, areas: &LayoutAreas, x: u16, y: u16) {
     ui.hovered_tab = if y >= areas.tab_bar.y && y < areas.tab_bar.y + areas.tab_bar.height {
-        tab_bar::tab_hit_test(areas.tab_bar, x)
+        tab_bar::tab_hit_test(areas.tab_bar, x, y)
     } else {
         None
     };

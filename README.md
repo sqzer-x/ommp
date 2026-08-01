@@ -143,7 +143,9 @@ Press `Ctrl+E, h` inside the app to view the full keybinding list at any time.
 | `d` | Remove from queue |
 | `b` | Add to playlist |
 | `p` | Toggle info panel (Clock / Album Art) |
+| `c` | Clear queue |
 | `q` | Quit |
+| `Ctrl+C` | Quit |
 
 ### Chord commands (press `Ctrl+E`, then a key)
 

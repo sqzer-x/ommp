@@ -18,7 +18,7 @@ use pane::Pane;
 use panes::dir_browser_pane::DirBrowserPane;
 use panes::library_pane::LibraryPane;
 use panes::list_pane::{self, ListPane};
-use panes::lyrics_pane::LyricsPane;
+use panes::track_info_pane::TrackInfoPane;
 use panes::queue_pane::QueuePane;
 
 /// Index into `Ui::list_panes` for each list tab. Queue and Directories have
@@ -45,7 +45,7 @@ pub struct Ui {
     pub queue_pane: QueuePane,
     /// One per list tab, keyed by Tab; each keeps its own selection and scroll.
     pub list_panes: [ListPane; 5],
-    pub lyrics_pane: LyricsPane,
+    pub track_info_pane: TrackInfoPane,
     pub last_click: Option<(std::time::Instant, u16, u16)>,
     /// Last known mouse position (column, row) for hover tracking
     pub mouse_pos: Option<(u16, u16)>,
@@ -107,7 +107,7 @@ impl Ui {
             dir_browser_pane: DirBrowserPane::new(music_dir),
             queue_pane: QueuePane::new(),
             list_panes: Default::default(),
-            lyrics_pane: LyricsPane::new(),
+            track_info_pane: TrackInfoPane::new(),
             last_click: None,
             mouse_pos: None,
             hovered_tab: None,
@@ -184,7 +184,7 @@ impl Ui {
 
         // Right pane bottom (Lyrics)
         let lyrics_focused = app.focus == FocusedPane::Lyrics;
-        self.lyrics_pane.render(frame, areas.lyrics, lyrics_focused, app, &self.theme);
+        self.track_info_pane.render(frame, areas.lyrics, lyrics_focused, app, &self.theme);
 
         // Progress bar
         progress_bar::render_progress_bar(frame, areas.progress_bar, app, &self.theme);
