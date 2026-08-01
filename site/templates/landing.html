@@ -16,7 +16,10 @@
 <meta property="og:image" content="{{ site.origin }}{{ asset('img/og.png') }}">
 <meta name="twitter:card" content="summary_large_image">
 
-<link rel="icon" href="{{ asset('img/logo.png') }}">
+{#- The wordmark is 723x421; at 16px it is a smear. This is the same 'O' block
+    glyph lifted out of it, squared up, carrying the logo's two colours. It also
+    sits at the site root so a bare /favicon.ico request resolves. -#}
+<link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
 <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/jetbrains-mono-400.woff2') }}" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/bricolage-grotesque-var.woff2') }}" crossorigin>
 <link rel="stylesheet" href="{{ asset('css/main.css') }}">

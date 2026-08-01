@@ -7,7 +7,7 @@ template = "landing.html"
 kicker    = "Terminal music player"
 headline  = "Point it at ~/Music."
 headline2 = "Press play."
-lede = "No MPD. No daemon. No config file. One binary that reads your tags, draws your album art in the terminal, and picks up where you left off."
+lede = "No MPD. No daemon. No config file. One binary that reads your tags, draws your album art in the terminal, and keeps your playlists and layout between sessions."
 
 install_primary_label = "Arch Linux"
 install_primary       = "yay -S ommp"
@@ -29,12 +29,12 @@ body  = "Browse the folders you actually organised, not a database's idea of the
 [[extra.features]]
 name  = "Artists"
 color = "#FFB464"
-body  = "Grouped by album artist where it is tagged, track artist where it is not. Untagged files land under one heading instead of vanishing."
+body  = "Grouped by the track artist, exactly as the file is tagged. Untagged files land under one heading instead of vanishing."
 
 [[extra.features]]
 name  = "Albums"
 color = "#C882FF"
-body  = "Paired with their artist, so two records called <em>Greatest Hits</em> stay two records."
+body  = "Paired with the album artist where it is tagged, the track artist where it is not — so two records called <em>Greatest Hits</em> stay two records."
 
 [[extra.features]]
 name  = "Genre"
