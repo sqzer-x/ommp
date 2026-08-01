@@ -169,4 +169,4 @@ Press `Ctrl+H` inside the app to view the full keybinding list at any time.
 
 ## License
 
-[MIT](LICENSE)
+[Apache 2.0](LICENSE)

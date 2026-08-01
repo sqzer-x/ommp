@@ -204,7 +204,7 @@ pub fn render_about_modal(frame: &mut Frame, area: Rect, _theme: &Theme) {
 
     // Read from Cargo.toml rather than a literal, so the About box cannot claim
     // a version the build is not.
-    for (label, value) in &[("Version", env!("CARGO_PKG_VERSION")), ("License", "MIT")] {
+    for (label, value) in &[("Version", env!("CARGO_PKG_VERSION")), ("License", "Apache-2.0")] {
         if cur_y < inner.y + inner.height {
             let lbl = format!("  {:12}", label);
             let val = *value;
