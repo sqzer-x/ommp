@@ -211,8 +211,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                             && !ui.show_search_modal
                             && !ui.show_help_modal
                             && !ui.show_playlist_modal
-                            && !ui.resize_mode
-                            && !ui.chord_pending
                         {
                             handler::update_queue_selection(&mut app, key);
                         }

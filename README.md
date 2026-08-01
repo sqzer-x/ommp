@@ -106,7 +106,7 @@ Switch browsing modes using the tabs at the top: Queue, Directories, Artists, Al
 
 ### Search
 
-Press `Ctrl+E, s` to open the search modal. Results filter as you type.
+Press `Ctrl+S` to open the search modal. Results filter as you type.
 
 You can also search by specific fields:
 
@@ -117,7 +117,7 @@ You can also search by specific fields:
 
 ## Keybindings
 
-Press `Ctrl+E, h` inside the app to view the full keybinding list at any time.
+Press `Ctrl+H` inside the app to view the full keybinding list at any time.
 
 ### Playback
 
@@ -147,15 +147,14 @@ Press `Ctrl+E, h` inside the app to view the full keybinding list at any time.
 | `q` | Quit |
 | `Ctrl+C` | Quit |
 
-### Chord commands (press `Ctrl+E`, then a key)
+### Commands
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+E, s` | Search |
-| `Ctrl+E, h` | Help |
-| `Ctrl+E, r` | Panel resize mode |
-| `Ctrl+E, i` | About OMMP |
-| `Ctrl+E, l` | Rescan library |
+| `Ctrl+S` | Search |
+| `Ctrl+H` | Help |
+| `Ctrl+A` | About OMMP |
+| `Ctrl+L` | Rescan library |
 
 ### Mouse
 
@@ -164,7 +163,7 @@ Press `Ctrl+E, h` inside the app to view the full keybinding list at any time.
 | Click tab | Switch tab |
 | Click panel | Focus panel + select item |
 | Double-click track | Play immediately |
-| Drag panel border | Resize panels |
+| `Ctrl` + drag panel border | Resize panels |
 | Click progress bar | Seek to position |
 | Scroll wheel | Scroll lists |
 

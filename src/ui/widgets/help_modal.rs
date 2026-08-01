@@ -18,11 +18,10 @@ const PLAYBACK: &[(&str, &str)] = &[
     ("b", "Add to playlist"),
     ("p", "Info panel: clock / art"),
     ("", ""),
-    ("Ctrl+E, s", "Search"),
-    ("Ctrl+E, h", "Help (this modal)"),
-    ("Ctrl+E, r", "Resize mode"),
-    ("Ctrl+E, i", "About OMMP"),
-    ("Ctrl+E, l", "Sync library"),
+    ("Ctrl+S", "Search"),
+    ("Ctrl+H", "Help (this modal)"),
+    ("Ctrl+A", "About OMMP"),
+    ("Ctrl+L", "Sync library"),
 ];
 
 /// Right column: navigation and the queue.
@@ -37,9 +36,11 @@ const NAVIGATION: &[(&str, &str)] = &[
     ("d", "Remove from queue"),
     ("c", "Clear queue"),
     ("", ""),
+    ("Ctrl+drag border", "Resize panels"),
+    ("Double-click", "Play queue track"),
+    ("", ""),
     ("Esc", "Close modal"),
-    ("q", "Quit"),
-    ("Ctrl+C", "Quit"),
+    ("q / Ctrl+C", "Quit"),
 ];
 
 pub fn render_help_modal(frame: &mut Frame, area: Rect, theme: &Theme) {

@@ -6,8 +6,6 @@ pub mod theme;
 pub mod widgets;
 
 use ratatui::Frame;
-use ratatui::style::{Color, Style};
-use ratatui::widgets::{Block, Borders};
 use widgets::{about_modal, help_modal, playlist_modal, search_modal};
 use widgets::playlist_modal::PlaylistModalMode;
 
@@ -53,14 +51,10 @@ pub struct Ui {
     pub hovered_tab: Option<usize>,
     /// Pane width percentages [Library, Playlist, Lyrics], sum = 100
     pub pane_widths: [u16; 3],
-    /// Resize mode active (Ctrl+E)
-    pub resize_mode: bool,
     /// Border being dragged: 0 = lib|playlist, 1 = playlist|lyrics, 2 = info|lyrics (horizontal), None = not dragging
     pub dragging_border: Option<u8>,
     /// Right column split: info pane height percentage (top), lyrics gets the rest
     pub right_split: u16,
-    /// Ctrl+E pressed, waiting for next key
-    pub chord_pending: bool,
     /// Help modal visible
     pub show_help_modal: bool,
     /// Search modal visible
@@ -112,10 +106,8 @@ impl Ui {
             mouse_pos: None,
             hovered_tab: None,
             pane_widths: [20, 60, 20],
-            resize_mode: false,
             dragging_border: None,
             right_split: 50,
-            chord_pending: false,
             show_help_modal: false,
             show_search_modal: false,
             search_modal_input: String::new(),
@@ -157,7 +149,7 @@ impl Ui {
         let areas = LayoutAreas::compute(frame.area(), self.pane_widths, self.right_split);
 
         // Status bar
-        status_bar::render_status_bar(frame, areas.status_bar, app, &self.theme, self.resize_mode);
+        status_bar::render_status_bar(frame, areas.status_bar, app, &self.theme);
 
         // Tab bar
         tab_bar::render_tab_bar(frame, areas.tab_bar, app.tab, self.hovered_tab, &self.theme);
@@ -189,18 +181,6 @@ impl Ui {
         // Progress bar
         progress_bar::render_progress_bar(frame, areas.progress_bar, app, &self.theme);
 
-        // Resize mode: overlay yellow border on focused pane
-        if self.resize_mode {
-            let focused_area = match app.focus {
-                FocusedPane::Library => areas.library,
-                FocusedPane::Playlist => areas.playlist,
-                FocusedPane::Lyrics => areas.lyrics,
-            };
-            let overlay = Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Yellow));
-            frame.render_widget(overlay, focused_area);
-        }
 
         // Modal overlays (rendered last, on top of everything)
         if self.show_search_modal {

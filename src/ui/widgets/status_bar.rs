@@ -9,7 +9,7 @@ use crate::app::state::{PlayState, SyncState};
 use crate::ui::theme::Theme;
 use crate::ui::text::format_time;
 
-pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme, resize_mode: bool) {
+pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
     let block = if let Some(err) = &app.audio_error {
         // Nothing will ever play; without this the UI shows a play state and a
         // moving progress bar over silence.
@@ -22,12 +22,6 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
                     .fg(Color::Rgb(255, 90, 90))
                     .add_modifier(Modifier::BOLD),
             )
-    } else if resize_mode {
-        Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Yellow))
-            .title(" [RESIZE] ")
-            .title_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
     } else if app.sync_state == SyncState::Scanning {
         Block::default()
             .borders(Borders::ALL)

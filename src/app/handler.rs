@@ -29,8 +29,21 @@ fn split_widths(boundary_pct: u16, fixed: u16, min_w: u16) -> Option<(u16, u16)>
     Some((first, budget - first))
 }
 
+/// True for a plain character keystroke, i.e. one that should be typed into a
+/// text field. Without the check, Ctrl+C inside the search box inserted a
+/// literal "c" instead of quitting.
+fn is_text_input(key: KeyEvent) -> bool {
+    !key.modifiers.contains(KeyModifiers::CONTROL)
+}
+
 pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction> {
     let mut actions = Vec::new();
+
+    // Quit works from anywhere, including with a modal open.
+    if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
+        actions.push(AppAction::Quit);
+        return actions;
+    }
 
     // About modal: Esc to close, g/s to open URLs
     if ui.show_about_modal {
@@ -94,7 +107,7 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
                     KeyCode::Backspace => {
                         ui.playlist_modal_input.pop();
                     }
-                    KeyCode::Char(c) => {
+                    KeyCode::Char(c) if is_text_input(key) => {
                         ui.playlist_modal_input.push(c);
                     }
                     _ => {}
@@ -212,7 +225,7 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
                 ui.search_modal_selected = 0;
                 ui.search_modal_scroll = 0;
             }
-            KeyCode::Char(c) => {
+            KeyCode::Char(c) if is_text_input(key) => {
                 ui.search_modal_input.push(c);
                 ui.search_modal_results = app.library.search(&ui.search_modal_input);
                 ui.search_modal_selected = 0;
@@ -223,62 +236,18 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
         return actions;
     }
 
-    // Chord: Ctrl+E pressed, waiting for next key
-    if ui.chord_pending {
-        ui.chord_pending = false;
+    // Ctrl-modified commands. These must come before the unmodified bindings
+    // below, which match on any modifier — Ctrl+S would otherwise be swallowed
+    // by the plain `s` shuffle arm.
+    //
+    // Ctrl+I and Ctrl+M are deliberately absent: terminals send them as the same
+    // bytes as Tab (0x09) and Enter (0x0D), so they cannot be told apart.
+    if key.modifiers.contains(KeyModifiers::CONTROL) {
         match key.code {
-            KeyCode::Char('s') => {
-                ui.show_search_modal = true;
-            }
-            KeyCode::Char('h') => {
-                ui.show_help_modal = true;
-            }
-            KeyCode::Char('r') => {
-                ui.resize_mode = !ui.resize_mode;
-            }
-            KeyCode::Char('i') => {
-                ui.show_about_modal = true;
-            }
-            KeyCode::Char('l') => {
-                actions.push(AppAction::LibrarySync);
-            }
-            _ => {} // unknown chord, ignore
-        }
-        return actions;
-    }
-
-    // Ctrl+E → chord pending
-    if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('e') {
-        ui.chord_pending = true;
-        return actions;
-    }
-
-    // Resize mode key handling
-    if ui.resize_mode {
-        match key.code {
-            KeyCode::Char('h') | KeyCode::Left => {
-                resize_pane(ui, app.focus, -2);
-            }
-            KeyCode::Char('l') | KeyCode::Right => {
-                resize_pane(ui, app.focus, 2);
-            }
-            KeyCode::Char('k') | KeyCode::Up => {
-                // Grow info pane (shrink lyrics)
-                let new_split = (ui.right_split as i16 - 3).clamp(10, 90) as u16;
-                ui.right_split = new_split;
-            }
-            KeyCode::Char('j') | KeyCode::Down => {
-                // Grow lyrics (shrink info pane)
-                let new_split = (ui.right_split as i16 + 3).clamp(10, 90) as u16;
-                ui.right_split = new_split;
-            }
-            KeyCode::Esc | KeyCode::Enter => {
-                ui.resize_mode = false;
-            }
-            KeyCode::Char('q') => {
-                ui.resize_mode = false;
-                actions.push(AppAction::Quit);
-            }
+            KeyCode::Char('s') => ui.show_search_modal = true,
+            KeyCode::Char('h') => ui.show_help_modal = true,
+            KeyCode::Char('a') => ui.show_about_modal = true,
+            KeyCode::Char('l') => actions.push(AppAction::LibrarySync),
             _ => {}
         }
         return actions;
@@ -287,10 +256,6 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
     // Global keybindings first
     match (key.modifiers, key.code) {
         (_, KeyCode::Char('q')) => {
-            actions.push(AppAction::Quit);
-            return actions;
-        }
-        (KeyModifiers::CONTROL, KeyCode::Char('c')) => {
             actions.push(AppAction::Quit);
             return actions;
         }
@@ -583,8 +548,10 @@ pub fn handle_mouse_event(
     // --- Handle specific event kinds ---
     match mouse.kind {
         MouseEventKind::Down(MouseButton::Left) => {
-            // Border drag start detection
-            if in_dashboard_y {
+            // Border drag start detection. Ctrl is required so that an ordinary
+            // click one column from a border selects a list row instead of
+            // silently starting a resize.
+            if in_dashboard_y && mouse.modifiers.contains(KeyModifiers::CONTROL) {
                 if x.abs_diff(border0_x) <= 1 {
                     ui.dragging_border = Some(0);
                     return actions;
@@ -882,47 +849,6 @@ pub fn refresh_hover(app: &App, ui: &mut Ui, terminal_area: ratatui::layout::Rec
     update_tab_hover(ui, &areas, x, y);
 }
 
-/// Resize the focused pane by delta percentage points.
-/// Positive delta = grow the focused pane rightward, negative = shrink rightward.
-fn resize_pane(ui: &mut Ui, focus: FocusedPane, delta: i16) {
-    let min_width: u16 = 10;
-    let w = &mut ui.pane_widths;
-
-    match focus {
-        FocusedPane::Library => {
-            let new_lib = (w[0] as i16 + delta).clamp(min_width as i16, 80) as u16;
-            let diff = new_lib as i16 - w[0] as i16;
-            let new_play = (w[1] as i16 - diff).max(min_width as i16) as u16;
-            let actual_diff = w[1] as i16 - new_play as i16;
-            w[0] = (w[0] as i16 + actual_diff) as u16;
-            w[1] = new_play;
-        }
-        FocusedPane::Playlist => {
-            if delta < 0 {
-                let shrink = (-delta) as u16;
-                if w[1] > min_width + shrink - 1 {
-                    w[1] -= shrink;
-                    w[0] += shrink;
-                }
-            } else {
-                let grow = delta as u16;
-                if w[2] > min_width + grow - 1 {
-                    w[2] -= grow;
-                    w[1] += grow;
-                }
-            }
-        }
-        FocusedPane::Lyrics => {
-            let new_lyr = (w[2] as i16 - delta).clamp(min_width as i16, 80) as u16;
-            let diff = w[2] as i16 - new_lyr as i16;
-            let new_play = (w[1] as i16 + diff).max(min_width as i16) as u16;
-            let actual_diff = new_play as i16 - w[1] as i16;
-            w[2] = (w[2] as i16 - actual_diff) as u16;
-            w[1] = new_play;
-        }
-    }
-}
-
 /// Update queue selection based on keyboard in playlist focus
 pub fn update_queue_selection(app: &mut App, key: KeyEvent) {
     let count = app.queue.tracks.len();
@@ -947,6 +873,74 @@ pub fn update_queue_selection(app: &mut App, key: KeyEvent) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
+
+    fn new_ui() -> Ui {
+        Ui::new(
+            PathBuf::from("."),
+            ratatui_image::picker::Picker::from_fontsize((8, 16)),
+        )
+    }
+
+    fn ctrl(c: char) -> KeyEvent {
+        KeyEvent::new(KeyCode::Char(c), KeyModifiers::CONTROL)
+    }
+
+    fn plain(c: char) -> KeyEvent {
+        KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
+    }
+
+    #[test]
+    fn ctrl_commands_open_their_modals() {
+        let app = App::new(PathBuf::from("."));
+
+        let mut ui = new_ui();
+        handle_key_event(ctrl('s'), &app, &mut ui);
+        assert!(ui.show_search_modal);
+
+        let mut ui = new_ui();
+        handle_key_event(ctrl('h'), &app, &mut ui);
+        assert!(ui.show_help_modal);
+
+        let mut ui = new_ui();
+        handle_key_event(ctrl('a'), &app, &mut ui);
+        assert!(ui.show_about_modal);
+
+        let mut ui = new_ui();
+        let actions = handle_key_event(ctrl('l'), &app, &mut ui);
+        assert!(matches!(actions.as_slice(), [AppAction::LibrarySync]));
+    }
+
+    #[test]
+    fn ctrl_shortcuts_do_not_fall_through_to_the_unmodified_binding() {
+        let app = App::new(PathBuf::from("."));
+        let mut ui = new_ui();
+
+        // The plain-`s` arm matches any modifier, so without ordering the Ctrl
+        // block first, Ctrl+S would toggle shuffle instead of opening search.
+        let actions = handle_key_event(ctrl('s'), &app, &mut ui);
+        assert!(actions.is_empty(), "Ctrl+S must not emit ToggleShuffle");
+        assert!(ui.show_search_modal);
+
+        // Unmodified keys are untouched.
+        let mut ui = new_ui();
+        let actions = handle_key_event(plain('s'), &app, &mut ui);
+        assert!(matches!(actions.as_slice(), [AppAction::ToggleShuffle]));
+        assert!(!ui.show_search_modal);
+    }
+
+    #[test]
+    fn ctrl_c_quits_even_from_inside_a_text_field() {
+        let app = App::new(PathBuf::from("."));
+        let mut ui = new_ui();
+        ui.show_search_modal = true;
+
+        let actions = handle_key_event(ctrl('c'), &app, &mut ui);
+
+        assert!(matches!(actions.as_slice(), [AppAction::Quit]));
+        // It used to be typed into the query as a literal "c".
+        assert!(ui.search_modal_input.is_empty());
+    }
 
     #[test]
     fn split_widths_keeps_the_total_at_100_and_both_panes_above_the_minimum() {
