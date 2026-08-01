@@ -70,6 +70,12 @@ pub struct App {
     /// Undecodable files in a row. Bounded so a queue of broken files stops
     /// instead of spinning through them forever.
     consecutive_failures: u32,
+    /// Every track index that appears in some playlist.
+    ///
+    /// The queue pane draws a star per row and asked
+    /// `playlists.iter().any(|pl| pl.tracks.contains(..))` for each visible
+    /// row — a linear scan of every playlist, per row, per frame.
+    playlist_members: std::collections::HashSet<usize>,
     audio_engine: Option<AudioEngine>,
     event_tx: Option<Sender<Event>>,
 }
@@ -89,6 +95,7 @@ impl App {
             initial_scan_complete: false,
             audio_error: None,
             consecutive_failures: 0,
+            playlist_members: std::collections::HashSet::new(),
             audio_engine: None,
             event_tx: None,
         }
@@ -280,11 +287,13 @@ impl App {
                         pl.tracks.push(track_idx);
                     }
                 }
+                self.rebuild_playlist_members();
             }
             AppAction::RemoveFromPlaylist { playlist_idx, track_idx } => {
                 if let Some(pl) = self.playlists.get_mut(playlist_idx) {
                     pl.tracks.retain(|&t| t != track_idx);
                 }
+                self.rebuild_playlist_members();
             }
             AppAction::CreatePlaylist(name) => {
                 self.playlists.push(state::Playlist::new(name));
@@ -292,6 +301,7 @@ impl App {
             AppAction::DeletePlaylist(idx) => {
                 if idx < self.playlists.len() {
                     self.playlists.remove(idx);
+                    self.rebuild_playlist_members();
                 }
             }
             AppAction::RenamePlaylist { idx, name } => {
@@ -309,7 +319,7 @@ impl App {
                     let tx = tx.clone();
                     std::thread::spawn(move || {
                         let lib = Library::scan(&dir);
-                        let _ = tx.send(Event::LibraryReady(lib));
+                        let _ = tx.send(Event::LibraryReady(Box::new(lib)));
                     });
                 }
             }
@@ -393,6 +403,7 @@ impl App {
         self.library = new_lib;
         self.sync_state = SyncState::Idle;
         self.resync_shuffle_order(true);
+        self.rebuild_playlist_members();
     }
 
     /// Start the track at queue position `qi`, the single place playback is
@@ -563,6 +574,15 @@ impl App {
             Some(prev_idx) if self.play_queue_position(prev_idx) => {}
             _ => self.stop_playback(),
         }
+    }
+
+    /// Is this track starred in any playlist? O(1).
+    pub fn is_in_playlist(&self, track_idx: usize) -> bool {
+        self.playlist_members.contains(&track_idx)
+    }
+
+    pub fn rebuild_playlist_members(&mut self) {
+        self.playlist_members = self.playlists.iter().flat_map(|pl| pl.tracks.iter().copied()).collect();
     }
 
     /// The engine confirmed audio is running, so the failure streak is over.

@@ -695,7 +695,7 @@ fn library_row_count(app: &App, ui: &Ui) -> usize {
     match app.tab {
         Tab::Queue => ui.library_pane.row_count(app),
         Tab::Directories => ui.dir_browser_pane.entries.len(),
-        tab => list_pane::rows_for(app, tab).len(),
+        tab => list_pane::row_count(app, tab),
     }
 }
 
@@ -705,7 +705,7 @@ fn library_key(key: KeyEvent, app: &App, ui: &mut Ui) -> Option<AppAction> {
         Tab::Queue => ui.library_pane.handle_key(key, app),
         Tab::Directories => ui.dir_browser_pane.handle_key(key, app),
         tab => {
-            let count = list_pane::rows_for(app, tab).len();
+            let count = list_pane::row_count(app, tab);
             let pane = ui.list_pane_mut(tab);
             pane.handle_key(key, count)
                 .then(|| list_pane::activate(app, tab, pane.selected))
@@ -720,7 +720,7 @@ fn library_mouse(mouse: MouseEvent, area: Rect, app: &App, ui: &mut Ui) -> Optio
         Tab::Queue => ui.library_pane.handle_mouse(mouse, area, app),
         Tab::Directories => ui.dir_browser_pane.handle_mouse(mouse, area, app),
         tab => {
-            let count = list_pane::rows_for(app, tab).len();
+            let count = list_pane::row_count(app, tab);
             ui.list_pane_mut(tab).handle_mouse(mouse, area, count);
             None
         }

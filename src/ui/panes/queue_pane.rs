@@ -146,7 +146,7 @@ impl Pane for QueuePane {
                         )
                     };
 
-                let in_playlist = app.playlists.iter().any(|pl| pl.tracks.contains(&track_idx));
+                let in_playlist = app.is_in_playlist(track_idx);
                 let prefix = if is_current { "\u{F04B} " } else { "  " }; // nf-fa-play
 
                 // Star integrated into title text so it stays next to the title

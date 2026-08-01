@@ -59,7 +59,7 @@ pub fn spawn_watcher(music_dir: &Path, event_tx: Sender<Event>) -> Option<Recomm
 
                     pending = None;
                     let lib = Library::scan(&dir);
-                    let _ = event_tx.send(Event::LibraryReady(lib));
+                    let _ = event_tx.send(Event::LibraryReady(Box::new(lib)));
                 }
                 Err(crossbeam_channel::RecvTimeoutError::Disconnected) => break,
             }

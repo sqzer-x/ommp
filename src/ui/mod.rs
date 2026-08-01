@@ -256,7 +256,7 @@ impl Ui {
 
     pub fn clamp_selections(&mut self, app: &App) {
         for tab in [Tab::Artists, Tab::Albums, Tab::Genre, Tab::Format, Tab::Playlists] {
-            let len = list_pane::rows_for(app, tab).len();
+            let len = list_pane::row_count(app, tab);
             let pane = &mut self.list_panes[list_slot(tab)];
             pane.selected = pane.selected.min(len.saturating_sub(1));
             pane.scroll_offset = pane.scroll_offset.min(len.saturating_sub(1));

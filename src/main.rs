@@ -119,6 +119,8 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
     // A backend write error must not skip the save below, so the loop records it
     // and breaks instead of returning early.
     let mut draw_error: Option<io::Error> = None;
+    // Set by anything that can change what is on screen.
+    let mut dirty = true;
 
     loop {
         // Check if library scan is done
@@ -167,10 +169,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                                         playlists.push(app::state::Playlist::new("Bookmarks"));
                                     }
                                     app.playlists = playlists;
+                                    app.rebuild_playlist_members();
                                 }
 
                                 scan_done = true;
                                 app.initial_scan_complete = true;
+                                dirty = true;
                                 _watcher = library::watcher::spawn_watcher(&music_dir, event_tx.clone());
                             }
                             Err(_) => {
@@ -181,6 +185,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                     }
                 }
             }
+        }
+
+        // The splash cross-fades over two seconds and needs frames of its own;
+        // everything else only redraws when an event changed something.
+        if ui.show_splash {
+            dirty = true;
         }
 
         // Process events
@@ -250,7 +260,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                         vec![]
                     }
                     Event::LibraryReady(new_lib) => {
-                        app.replace_library(new_lib);
+                        app.replace_library(*new_lib);
                         ui.refresh_dir_browser(&app);
                         ui.clamp_selections(&app);
                         // The search modal caches raw library indices, which
@@ -299,21 +309,32 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                 if app.should_quit {
                     break;
                 }
+                dirty = true;
             }
             Err(crossbeam_channel::RecvTimeoutError::Timeout) => {
-                // Just re-render
+                // Nothing happened, so nothing can have changed.
             }
             Err(crossbeam_channel::RecvTimeoutError::Disconnected) => {
                 break;
             }
         }
 
-        // Render
-        if let Err(e) = terminal.draw(|frame| {
-            ui.render(frame, &app);
-        }) {
-            draw_error = Some(e);
-            break;
+        // Render only when something changed, and only once the queue is drained.
+        //
+        // Redrawing on the 50ms timeout burned a full frame 20 times a second
+        // with nothing happening; the ticks and position updates that do change
+        // the display arrive on their own. Mouse motion tracking emits hundreds
+        // of events a second, and drawing between each one let the unbounded
+        // channel grow faster than it drained, so the UI replayed stale pointer
+        // positions for seconds after the mouse stopped.
+        if dirty && event_rx.is_empty() {
+            dirty = false;
+            if let Err(e) = terminal.draw(|frame| {
+                ui.render(frame, &app);
+            }) {
+                draw_error = Some(e);
+                break;
+            }
         }
     }
 

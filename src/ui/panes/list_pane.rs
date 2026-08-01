@@ -230,27 +230,48 @@ impl ListPane {
     }
 }
 
+/// How many rows `tab` will produce, without building any of them.
+///
+/// Mouse handling needs only the count; it used to get it by materialising the
+/// whole row list, so every motion event rebuilt the artist or album view.
+pub fn row_count(app: &App, tab: Tab) -> usize {
+    match tab {
+        Tab::Artists => app.library.artists().len(),
+        Tab::Albums => app.library.albums().len(),
+        Tab::Genre => app.library.genres().len(),
+        Tab::Format => app.library.formats().len(),
+        Tab::Playlists => app.playlists.len(),
+        Tab::Queue | Tab::Directories => 0,
+    }
+}
+
 /// Rows for whichever of the five list tabs is showing.
 pub fn rows_for(app: &App, tab: Tab) -> Vec<ListRow> {
     match tab {
-        Tab::Artists => app.library.get_artists().into_iter().map(ListRow::plain).collect(),
+        Tab::Artists => app
+            .library
+            .artists()
+            .iter()
+            .map(|a| ListRow::plain(a.clone()))
+            .collect(),
         Tab::Albums => app
             .library
-            .get_albums()
-            .into_iter()
-            .map(|(album, artist)| ListRow::with_detail(album, artist))
+            .albums()
+            .iter()
+            .map(|(album, artist)| ListRow::with_detail(album.clone(), artist.clone()))
             .collect(),
-        Tab::Genre => app.library.get_genres().into_iter().map(ListRow::plain).collect(),
-        Tab::Format => {
-            // One pass over the library instead of one per visible row: the old
-            // format pane called get_tracks_by_format inside the render closure,
-            // rescanning and lowercasing every track for every row, every frame.
-            let counts = app.library.format_counts();
-            counts
-                .into_iter()
-                .map(|(fmt, n)| ListRow::with_detail(fmt, format!("({n})")))
-                .collect()
-        }
+        Tab::Genre => app
+            .library
+            .genres()
+            .iter()
+            .map(|g| ListRow::plain(g.clone()))
+            .collect(),
+        Tab::Format => app
+            .library
+            .formats()
+            .iter()
+            .map(|(fmt, n)| ListRow::with_detail(fmt.clone(), format!("({n})")))
+            .collect(),
         Tab::Playlists => app
             .playlists
             .iter()
@@ -267,14 +288,16 @@ pub fn rows_for(app: &App, tab: Tab) -> Vec<ListRow> {
 /// The action for activating row `selected` of `tab`.
 pub fn activate(app: &App, tab: Tab, selected: usize) -> Option<AppAction> {
     let tracks = match tab {
-        Tab::Artists => app.library.get_tracks_by_artist(app.library.get_artists().get(selected)?),
+        Tab::Artists => app.library.tracks_by_artist(app.library.artists().get(selected)?).to_vec(),
         Tab::Albums => {
-            let albums = app.library.get_albums();
-            let (album, artist) = albums.get(selected)?;
-            app.library.get_tracks_by_album(album, artist)
+            let (album, artist) = app.library.albums().get(selected)?;
+            app.library.tracks_by_album(album, artist).to_vec()
         }
-        Tab::Genre => app.library.get_tracks_by_genre(app.library.get_genres().get(selected)?),
-        Tab::Format => app.library.get_tracks_by_format(app.library.get_formats().get(selected)?),
+        Tab::Genre => app.library.tracks_by_genre(app.library.genres().get(selected)?).to_vec(),
+        Tab::Format => app
+            .library
+            .tracks_by_format(&app.library.formats().get(selected)?.0)
+            .to_vec(),
         Tab::Playlists => app.playlists.get(selected)?.tracks.clone(),
         Tab::Queue | Tab::Directories => return None,
     };

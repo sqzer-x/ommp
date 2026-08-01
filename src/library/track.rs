@@ -1,5 +1,7 @@
+use lofty::config::ParseOptions;
 use lofty::file::AudioFile;
 use lofty::prelude::*;
+use lofty::probe::Probe;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -26,7 +28,15 @@ pub struct Track {
 
 impl Track {
     pub fn from_path(path: &Path) -> Option<Self> {
-        let tagged_file = lofty::read_from_path(path).ok()?;
+        // Skip cover art: scanning never keeps it, and the album art view reads
+        // the picture straight from the file when it actually needs one. lofty
+        // otherwise decodes and allocates every embedded image — around a
+        // megabyte per track — only to have it dropped.
+        let tagged_file = Probe::open(path)
+            .ok()?
+            .options(ParseOptions::new().read_cover_art(false))
+            .read()
+            .ok()?;
 
         let tag = tagged_file
             .primary_tag()

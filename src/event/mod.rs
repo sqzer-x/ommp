@@ -8,7 +8,10 @@ pub enum Event {
     Resize,
     Tick,
     Audio(AudioEvent),
-    LibraryReady(crate::library::Library),
+    /// Boxed: every event in the channel is sized to the largest variant, and
+    /// the library carries its whole derived index. Mouse motion alone puts
+    /// hundreds of events a second through here.
+    LibraryReady(Box<crate::library::Library>),
 }
 
 #[derive(Debug, Clone)]

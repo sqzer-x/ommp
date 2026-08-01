@@ -63,32 +63,25 @@ impl LibraryPane {
         entries.push(LibraryEntry::Separator);
 
         // --- Directories ---
-        let mut dirs = std::collections::BTreeSet::new();
-        for t in &app.library.tracks {
-            if let Some(parent) = t.path.parent() {
-                if let Some(name) = parent.file_name().and_then(|n| n.to_str()) {
-                    dirs.insert(name.to_string());
-                }
-            }
-        }
+        let dirs = app.library.directories();
         entries.push(LibraryEntry::SectionHeader(format!(
             "\u{F054} Directories ({})",
             dirs.len()
         )));
-        for d in &dirs {
+        for d in dirs {
             entries.push(LibraryEntry::FavoriteDir(d.clone()));
         }
 
         entries.push(LibraryEntry::Separator);
 
         // --- Albums ---
-        let albums = app.library.get_albums();
+        let albums = app.library.albums();
         entries.push(LibraryEntry::SectionHeader(format!(
             "\u{F054} Albums ({})",
             albums.len()
         )));
         for (album, artist) in albums {
-            entries.push(LibraryEntry::Album { name: album, artist });
+            entries.push(LibraryEntry::Album { name: album.clone(), artist: artist.clone() });
         }
 
         entries
@@ -354,7 +347,7 @@ impl Pane for LibraryPane {
                         }
                     }
                     LibraryEntry::Album { name, artist } => {
-                        let tracks = app.library.get_tracks_by_album(name, artist);
+                        let tracks = app.library.tracks_by_album(name, artist).to_vec();
                         if !tracks.is_empty() {
                             Some(AppAction::AddToQueue(tracks))
                         } else {
