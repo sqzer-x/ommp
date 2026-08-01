@@ -239,6 +239,10 @@ a:hover { color: var(--cyan); }
 .split { display: grid; gap: clamp(2rem, 5vw, 3.5rem); align-items: center; }
 @media (min-width: 56rem) {
   .split { grid-template-columns: 22rem 1fr; }
+  /* Reordering alone leaves the figure in the 22rem track and shrinks it to
+     half the size of the one above. Mirror the tracks so both screenshots come
+     out the same size, and only the side they sit on changes. */
+  .split-reverse { grid-template-columns: 1fr 22rem; }
   .split-reverse .split-text { order: 2; }
 }
 
