@@ -1,6 +1,6 @@
 [package]
 name = "ommp"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["sqzer-x"]
 description = "Oh My Music Player — a terminal music player built with ratatui"
