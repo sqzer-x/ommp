@@ -1,6 +1,4 @@
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crossbeam_channel::Sender;
@@ -30,42 +28,38 @@ pub fn spawn_watcher(music_dir: &Path, event_tx: Sender<Event>) -> Option<Recomm
 
     watcher.watch(music_dir, RecursiveMode::Recursive).ok()?;
 
-    let scanning = Arc::new(AtomicBool::new(false));
-
-    // Debounce thread
-    let scanning_clone = scanning.clone();
+    // Debounce thread. `pending` is None until a real filesystem event arrives,
+    // so startup does not look like activity — seeding it with `Instant::now()`
+    // used to fire a full rescan ~2s in with nothing having changed, and again
+    // at ~2.5s because the timestamp was never reset after scanning.
     std::thread::spawn(move || {
         let debounce = Duration::from_secs(2);
-        let mut last_event = Instant::now();
+        let mut pending: Option<Instant> = None;
 
         loop {
             match notify_rx.recv_timeout(Duration::from_millis(500)) {
                 Ok(()) => {
-                    last_event = Instant::now();
+                    pending = Some(Instant::now());
                 }
                 Err(crossbeam_channel::RecvTimeoutError::Timeout) => {
-                    if last_event.elapsed() >= debounce
-                        && !scanning_clone.load(Ordering::Relaxed)
-                    {
-                        // Check if there were any events recently
-                        // Drain any pending events
-                        let mut had_events = false;
-                        while notify_rx.try_recv().is_ok() {
-                            had_events = true;
-                        }
-                        if had_events {
-                            last_event = Instant::now();
-                            continue;
-                        }
-
-                        // Only rescan if we actually saw events since last scan
-                        if last_event.elapsed() < debounce + Duration::from_millis(600) {
-                            scanning_clone.store(true, Ordering::Relaxed);
-                            let lib = Library::scan(&dir);
-                            let _ = event_tx.send(Event::LibraryReady(lib));
-                            scanning_clone.store(false, Ordering::Relaxed);
-                        }
+                    let Some(last_event) = pending else { continue };
+                    if last_event.elapsed() < debounce {
+                        continue;
                     }
+                    // Drain anything that landed while we were deciding; if the
+                    // batch is still arriving, wait for it to settle.
+                    let mut had_events = false;
+                    while notify_rx.try_recv().is_ok() {
+                        had_events = true;
+                    }
+                    if had_events {
+                        pending = Some(Instant::now());
+                        continue;
+                    }
+
+                    pending = None;
+                    let lib = Library::scan(&dir);
+                    let _ = event_tx.send(Event::LibraryReady(lib));
                 }
                 Err(crossbeam_channel::RecvTimeoutError::Disconnected) => break,
             }

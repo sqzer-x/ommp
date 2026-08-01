@@ -241,6 +241,20 @@ impl Ui {
         self.dir_browser_pane.refresh(app);
     }
 
+    /// Re-run the open search against the new library. `search_modal_results`
+    /// holds raw library indices and lives on `Ui`, so `App::replace_library`
+    /// never sees it — stale entries would panic the next render.
+    pub fn refresh_search_results(&mut self, app: &App) {
+        if !self.show_search_modal {
+            self.search_modal_results.clear();
+            return;
+        }
+        self.search_modal_results = app.library.search(&self.search_modal_input);
+        self.search_modal_selected = 0;
+        self.search_modal_scroll = 0;
+        self.search_modal_hover_row = None;
+    }
+
     pub fn clamp_selections(&mut self, app: &App) {
         let artists_len = app.library.get_artists().len();
         if artists_len == 0 {

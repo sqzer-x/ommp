@@ -155,6 +155,10 @@ pub struct QueueState {
 pub struct Playlist {
     pub name: String,
     pub tracks: Vec<usize>,
+    /// Paths the library did not contain at the last remap, kept verbatim.
+    /// An unmounted drive or a partial scan must not delete playlist entries,
+    /// so they park here and are restored the moment the files reappear.
+    pub missing: Vec<std::path::PathBuf>,
 }
 
 impl Playlist {
@@ -162,6 +166,7 @@ impl Playlist {
         Self {
             name: name.into(),
             tracks: Vec::new(),
+            missing: Vec::new(),
         }
     }
 }

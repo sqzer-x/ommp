@@ -9,6 +9,24 @@ use crate::ui::widgets::{progress_bar, tab_bar};
 use crate::ui::widgets::playlist_modal::PlaylistModalMode;
 use crate::ui::Ui;
 
+pub const MIN_PANE_WIDTH: u16 = 10;
+
+/// Split the 100% budget left over after `fixed` between the two panes flanking
+/// a dragged border, placing the boundary at `boundary_pct`. Returns None when
+/// there is not enough room for both.
+///
+/// Every arm of the drag math used to do this inline with bare `u16`
+/// subtraction, which underflows as soon as the pointer leaves the dashboard —
+/// dragging the playlist|lyrics border to the left edge panicked outright.
+fn split_widths(boundary_pct: u16, fixed: u16, min_w: u16) -> Option<(u16, u16)> {
+    let budget = 100u16.checked_sub(fixed)?;
+    if budget < min_w * 2 {
+        return None;
+    }
+    let first = boundary_pct.clamp(min_w, budget - min_w);
+    Some((first, budget - first))
+}
+
 pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction> {
     let mut actions = Vec::new();
 
@@ -548,24 +566,23 @@ pub fn handle_mouse_event(
                     if dashboard_w > 0 {
                         let rel_x = x.saturating_sub(dashboard_x);
                         let pct = ((rel_x as u32 * 100) / dashboard_w as u32) as u16;
-                        let min_w: u16 = 10;
+                        let min_w: u16 = MIN_PANE_WIDTH;
                         if border_idx == 0 {
                             // Dragging lib|playlist border
-                            let new_lib = pct.clamp(min_w, 100 - min_w - ui.pane_widths[2]);
-                            let new_play = (100 - new_lib - ui.pane_widths[2]).max(min_w);
-                            let new_lib = 100 - new_play - ui.pane_widths[2];
-                            if new_lib >= min_w {
-                                ui.pane_widths[0] = new_lib;
-                                ui.pane_widths[1] = new_play;
+                            if let Some((lib, play)) = split_widths(pct, ui.pane_widths[2], min_w) {
+                                ui.pane_widths[0] = lib;
+                                ui.pane_widths[1] = play;
                             }
                         } else if border_idx == 1 {
-                            // Dragging playlist|lyrics border
-                            let new_right = (100u16.saturating_sub(pct)).max(min_w);
-                            let new_play = (100 - ui.pane_widths[0] - new_right).max(min_w);
-                            let new_right = 100 - ui.pane_widths[0] - new_play;
-                            if new_right >= min_w {
-                                ui.pane_widths[1] = new_play;
-                                ui.pane_widths[2] = new_right;
+                            // Dragging playlist|lyrics border. `pct` is measured
+                            // from the dashboard's left edge, so subtract the
+                            // library pane to get the boundary inside the budget.
+                            let boundary = pct.saturating_sub(ui.pane_widths[0]);
+                            if let Some((play, right)) =
+                                split_widths(boundary, ui.pane_widths[0], min_w)
+                            {
+                                ui.pane_widths[1] = play;
+                                ui.pane_widths[2] = right;
                             }
                         } else if border_idx == 2 {
                             // Dragging info|lyrics horizontal border
@@ -919,5 +936,37 @@ pub fn update_queue_selection(app: &mut App, key: KeyEvent) {
             }
         }
         _ => {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn split_widths_keeps_the_total_at_100_and_both_panes_above_the_minimum() {
+        let (a, b) = split_widths(50, 20, MIN_PANE_WIDTH).unwrap();
+        assert_eq!((a, b), (50, 30));
+        assert_eq!(a + b + 20, 100);
+    }
+
+    #[test]
+    fn split_widths_survives_dragging_past_either_edge() {
+        // Pointer at or left of the dashboard: used to underflow `100 - fixed - 100`.
+        let (a, b) = split_widths(0, 20, MIN_PANE_WIDTH).unwrap();
+        assert_eq!((a, b), (MIN_PANE_WIDTH, 80 - MIN_PANE_WIDTH));
+        // Pointer dragged far past the right edge.
+        let (a, b) = split_widths(500, 20, MIN_PANE_WIDTH).unwrap();
+        assert_eq!((a, b), (80 - MIN_PANE_WIDTH, MIN_PANE_WIDTH));
+    }
+
+    #[test]
+    fn split_widths_refuses_when_the_third_pane_leaves_no_room() {
+        // 85 fixed leaves 15, which cannot hold two 10% panes. The old code
+        // called clamp(10, 5) here, and `Ord::clamp` panics when min > max.
+        assert_eq!(split_widths(50, 85, MIN_PANE_WIDTH), None);
+        assert_eq!(split_widths(50, 120, MIN_PANE_WIDTH), None);
+        // Exactly enough room is allowed.
+        assert_eq!(split_widths(50, 80, MIN_PANE_WIDTH), Some((10, 10)));
     }
 }

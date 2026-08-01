@@ -15,7 +15,6 @@ use state::*;
 #[derive(Debug, Clone)]
 pub enum AppAction {
     Quit,
-    PlayTrack(usize),
     PauseResume,
     NextTrack,
     PrevTrack,
@@ -58,7 +57,6 @@ pub struct App {
     pub search_mode: bool,
     pub search_results: Vec<usize>,
     pub playlists: Vec<state::Playlist>,
-    pub track_just_changed: bool,
     pub sync_state: SyncState,
     pub initial_scan_complete: bool,
     audio_engine: Option<AudioEngine>,
@@ -79,7 +77,6 @@ impl App {
             search_mode: false,
             search_results: Vec::new(),
             playlists: vec![state::Playlist::new("Bookmarks")],
-            track_just_changed: false,
             sync_state: SyncState::Idle,
             initial_scan_complete: false,
             audio_engine: None,
@@ -103,19 +100,6 @@ impl App {
                     engine.send(PlayerCommand::Stop);
                 }
             }
-            AppAction::PlayTrack(track_idx) => {
-                if track_idx < self.library.tracks.len() {
-                    let path = self.library.tracks[track_idx].path.clone();
-                    let dur = self.library.tracks[track_idx].duration.as_secs_f64();
-                    if let Some(ref engine) = self.audio_engine {
-                        engine.send(PlayerCommand::Play(path));
-                    }
-                    self.playback.state = PlayState::Playing;
-                    self.playback.position_secs = 0.0;
-                    self.playback.duration_secs = dur;
-                    self.track_just_changed = true;
-                }
-            }
             AppAction::PauseResume => match self.playback.state {
                 PlayState::Playing => {
                     if let Some(ref engine) = self.audio_engine {
@@ -132,9 +116,7 @@ impl App {
                 PlayState::Stopped => {
                     // Try to play current queue item
                     if let Some(idx) = self.queue.current_index {
-                        if let Some(&track_idx) = self.queue.tracks.get(idx) {
-                            self.handle_action(AppAction::PlayTrack(track_idx));
-                        }
+                        self.play_queue_position(idx);
                     }
                 }
             },
@@ -202,6 +184,9 @@ impl App {
                 self.queue.current_index = None;
                 self.queue.selected_index = 0;
                 self.queue.scroll_offset = 0;
+                // Without this the engine keeps playing a track the queue no
+                // longer contains, and its position updates keep the clock running.
+                self.stop_playback();
             }
             AppAction::RemoveFromQueue(idx) => {
                 if idx < self.queue.tracks.len() {
@@ -218,11 +203,10 @@ impl App {
                 }
             }
             AppAction::PlayQueueIndex(idx) => {
-                if idx < self.queue.tracks.len() {
-                    self.queue.current_index = Some(idx);
-                    let track_idx = self.queue.tracks[idx];
-                    self.handle_action(AppAction::PlayTrack(track_idx));
-                }
+                // play_queue_position only commits current_index once the track
+                // is known to resolve, so a stale row cannot move the ▶ marker
+                // while a different track keeps playing.
+                self.play_queue_position(idx);
             }
             AppAction::UpdatePosition { position_secs, duration_secs } => {
                 self.playback.position_secs = position_secs;
@@ -281,6 +265,15 @@ impl App {
     }
 
     pub fn replace_library(&mut self, new_lib: Library) {
+        // An empty scan against a non-empty library means the music directory
+        // went away (unmounted, renamed, permissions), not that the user deleted
+        // every file. Applying it would prune the queue and every playlist, and
+        // the pruned result is what gets written to disk on exit.
+        if new_lib.tracks.is_empty() && !self.library.tracks.is_empty() {
+            self.sync_state = SyncState::Idle;
+            return;
+        }
+
         // Build path→new_index map
         let path_map: HashMap<PathBuf, usize> = new_lib.tracks.iter().enumerate()
             .map(|(i, t)| (t.path.clone(), i))
@@ -317,15 +310,29 @@ impl App {
             self.queue.tracks.len().saturating_sub(1)
         );
 
-        // Remap playlists
+        // Remap playlists. Entries the new library lacks are parked in `missing`
+        // rather than dropped, and anything parked earlier is restored if it came
+        // back.
         for pl in &mut self.playlists {
-            pl.tracks = pl.tracks.iter()
-                .filter_map(|&old_idx| {
-                    self.library.tracks.get(old_idx)
-                        .and_then(|t| path_map.get(&t.path))
-                        .copied()
-                })
-                .collect();
+            let mut tracks = Vec::with_capacity(pl.tracks.len());
+            let mut missing = Vec::new();
+            for &old_idx in &pl.tracks {
+                let Some(path) = self.library.tracks.get(old_idx).map(|t| &t.path) else {
+                    continue;
+                };
+                match path_map.get(path) {
+                    Some(&new_idx) => tracks.push(new_idx),
+                    None => missing.push(path.clone()),
+                }
+            }
+            for path in pl.missing.drain(..) {
+                match path_map.get(&path) {
+                    Some(&new_idx) => tracks.push(new_idx),
+                    None => missing.push(path),
+                }
+            }
+            pl.tracks = tracks;
+            pl.missing = missing;
         }
 
         // Remap search results
@@ -337,6 +344,42 @@ impl App {
         self.sync_state = SyncState::Idle;
     }
 
+    /// Start the track at queue position `qi`, the single place playback is
+    /// actually kicked off. Returns false when the position — or the library
+    /// index behind it — no longer exists, which is why every caller goes
+    /// through here instead of indexing `library.tracks` directly.
+    fn play_queue_position(&mut self, qi: usize) -> bool {
+        let Some((path, dur)) = self
+            .queue
+            .tracks
+            .get(qi)
+            .and_then(|&ti| self.library.tracks.get(ti))
+            .map(|t| (t.path.clone(), t.duration.as_secs_f64()))
+        else {
+            return false;
+        };
+
+        if let Some(ref engine) = self.audio_engine {
+            engine.send(PlayerCommand::Play(path));
+        }
+        self.queue.current_index = Some(qi);
+        self.playback.state = PlayState::Playing;
+        self.playback.position_secs = 0.0;
+        self.playback.duration_secs = dur;
+        true
+    }
+
+    /// Tell the audio engine to stop and mark playback stopped. Setting only the
+    /// UI state leaves the engine playing and its position updates overwriting
+    /// the clock.
+    fn stop_playback(&mut self) {
+        if let Some(ref engine) = self.audio_engine {
+            engine.send(PlayerCommand::Stop);
+        }
+        self.playback.state = PlayState::Stopped;
+        self.playback.position_secs = 0.0;
+    }
+
     fn play_next(&mut self) {
         if self.queue.tracks.is_empty() {
             return;
@@ -345,16 +388,7 @@ impl App {
         match self.playback.repeat {
             RepeatMode::One => {
                 if let Some(idx) = self.queue.current_index {
-                    let track_idx = self.queue.tracks[idx];
-                    let path = self.library.tracks[track_idx].path.clone();
-                    let dur = self.library.tracks[track_idx].duration.as_secs_f64();
-                    if let Some(ref engine) = self.audio_engine {
-                        engine.send(PlayerCommand::Play(path));
-                    }
-                    self.playback.state = PlayState::Playing;
-                    self.playback.position_secs = 0.0;
-                    self.playback.duration_secs = dur;
-                    self.track_just_changed = true;
+                    self.play_queue_position(idx);
                 }
             }
             _ => {
@@ -375,21 +409,9 @@ impl App {
                     Some(0)
                 };
 
-                if let Some(next_idx) = next {
-                    self.queue.current_index = Some(next_idx);
-                    let track_idx = self.queue.tracks[next_idx];
-                    let path = self.library.tracks[track_idx].path.clone();
-                    let dur = self.library.tracks[track_idx].duration.as_secs_f64();
-                    if let Some(ref engine) = self.audio_engine {
-                        engine.send(PlayerCommand::Play(path));
-                    }
-                    self.playback.state = PlayState::Playing;
-                    self.playback.position_secs = 0.0;
-                    self.playback.duration_secs = dur;
-                    self.track_just_changed = true;
-                } else {
-                    self.playback.state = PlayState::Stopped;
-                    self.playback.position_secs = 0.0;
+                match next {
+                    Some(next_idx) if self.play_queue_position(next_idx) => {}
+                    _ => self.stop_playback(),
                 }
             }
         }
@@ -403,43 +425,26 @@ impl App {
         // If more than 3 seconds in, restart current track
         if self.playback.position_secs > 3.0 {
             if let Some(idx) = self.queue.current_index {
-                let track_idx = self.queue.tracks[idx];
-                let path = self.library.tracks[track_idx].path.clone();
-                let dur = self.library.tracks[track_idx].duration.as_secs_f64();
-                if let Some(ref engine) = self.audio_engine {
-                    engine.send(PlayerCommand::Play(path));
+                if self.play_queue_position(idx) {
+                    return;
                 }
-                self.playback.position_secs = 0.0;
-                self.playback.duration_secs = dur;
-                self.track_just_changed = true;
-                return;
             }
         }
 
         let prev = if let Some(idx) = self.queue.current_index {
             if idx > 0 {
-                Some(idx - 1)
+                idx - 1
             } else if self.playback.repeat == RepeatMode::All {
-                Some(self.queue.tracks.len() - 1)
+                self.queue.tracks.len() - 1
             } else {
-                Some(0)
+                0
             }
         } else {
-            Some(0)
+            0
         };
 
-        if let Some(prev_idx) = prev {
-            self.queue.current_index = Some(prev_idx);
-            let track_idx = self.queue.tracks[prev_idx];
-            let path = self.library.tracks[track_idx].path.clone();
-            let dur = self.library.tracks[track_idx].duration.as_secs_f64();
-            if let Some(ref engine) = self.audio_engine {
-                engine.send(PlayerCommand::Play(path));
-            }
-            self.playback.state = PlayState::Playing;
-            self.playback.position_secs = 0.0;
-            self.playback.duration_secs = dur;
-            self.track_just_changed = true;
+        if !self.play_queue_position(prev) {
+            self.stop_playback();
         }
     }
 
