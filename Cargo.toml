@@ -1,0 +1,28 @@
+[package]
+name = "ommp"
+version = "0.1.0"
+edition = "2021"
+authors = ["sqzer-x"]
+description = "Oh My Music Player — a terminal music player built with ratatui"
+license = "MIT"
+repository = "https://github.com/sqzer-x/ommp"
+keywords = ["music", "player", "tui", "terminal", "ratatui"]
+categories = ["command-line-utilities", "multimedia::audio"]
+
+[dependencies]
+ratatui = "0.29"
+crossterm = "0.28"
+rodio = { version = "0.21", features = ["symphonia-all"] }
+lofty = "0.21"
+walkdir = "2"
+crossbeam-channel = "0.5"
+anyhow = "1"
+rand = "0.8"
+unicode-width = "0.2"
+symphonia = { version = "0.5", features = ["all"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+libc = "0.2"
+ratatui-image = { version = "4.2.0", default-features = false, features = ["crossterm"] }
+notify = "7"
