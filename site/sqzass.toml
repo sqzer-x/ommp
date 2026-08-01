@@ -1,0 +1,16 @@
+title       = "ommp"
+description = "Oh My Music Player — a terminal music player written in Rust. No MPD, no daemon."
+
+# The whole URL, path included: sqzass splits this into an origin and a base
+# path, and prefixes every page and asset URL with the path. Serving from a
+# repository subpath needs nothing else.
+base_url = "https://sqzer-x.github.io/ommp"
+
+[search]
+# One page. A full-text index nobody fetches is just bytes.
+enabled = false
+
+[highlight]
+# The install commands are styled by hand in the template, so the generated
+# syntax stylesheet would go unused.
+enabled = false

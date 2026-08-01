@@ -1,0 +1,211 @@
+{%- set x = page.extra -%}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ site.title }} — {{ site.description }}</title>
+<meta name="description" content="{{ page.description }}">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0A051E">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ site.title }} — Oh My Music Player">
+<meta property="og:description" content="{{ page.description }}">
+<meta property="og:url" content="{{ page.permalink }}">
+<meta property="og:image" content="{{ site.origin }}{{ asset('img/01-main.png') }}">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="{{ asset('img/logo.png') }}">
+<link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/jetbrains-mono-400.woff2') }}" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="{{ asset('fonts/bricolage-grotesque-var.woff2') }}" crossorigin>
+<link rel="stylesheet" href="{{ asset('css/main.css') }}">
+</head>
+<body>
+
+<a class="skip" href="#what">Skip to content</a>
+
+<!-- ── Hero ──────────────────────────────────────────────────────────── -->
+<header class="hero">
+  <div class="wrap hero-in">
+    <img class="hero-logo" src="{{ asset('img/logo.png') }}" alt="ommp" width="723" height="421">
+
+    <p class="kicker">{{ x.kicker }}</p>
+    <h1 class="display">
+      {{ x.headline }}<br><em>{{ x.headline2 }}</em>
+    </h1>
+    <p class="lede">{{ x.lede }}</p>
+
+    <div class="installs">
+      <div class="install">
+        <span class="install-label">{{ x.install_primary_label }}</span>
+        <code class="cmd" data-copy>{{ x.install_primary }}</code>
+      </div>
+      <div class="install">
+        <span class="install-label">{{ x.install_secondary_label }}</span>
+        <code class="cmd" data-copy>{{ x.install_secondary }}</code>
+      </div>
+    </div>
+
+    <p class="hero-meta">
+      Linux · Apache&nbsp;2.0 ·
+      <a href="https://github.com/sqzer-x/ommp">Source</a> ·
+      <a href="https://crates.io/crates/ommp">crates.io</a> ·
+      <a href="https://aur.archlinux.org/packages/ommp">AUR</a>
+    </p>
+  </div>
+
+  <figure class="shot shot-hero">
+    <img src="{{ asset('img/01-main.png') }}" alt="ommp playing a track: library on the left, queue in the middle, album art and track details on the right"
+         width="2400" height="1350" fetchpriority="high">
+  </figure>
+</header>
+
+<!-- ── Features, keyed to the tabs ───────────────────────────────────── -->
+<section id="what" class="band" data-section="Seven ways in">
+  <div class="wrap">
+    <h2 class="sec-title">Seven ways into the same library</h2>
+    <p class="sec-lede">The tab strip across the top is the whole navigation model. Each one is a different question about the same files.</p>
+
+    <ul class="features">
+      {%- for f in x.features %}
+      <li class="feature" style="--accent: {{ f.color }}">
+        <span class="feature-name">{{ f.name }}</span>
+        <p class="feature-body">{{ f.body | safe }}</p>
+      </li>
+      {%- endfor %}
+    </ul>
+  </div>
+</section>
+
+<!-- ── Speed ─────────────────────────────────────────────────────────── -->
+<section class="band band-alt" data-section="Speed">
+  <div class="wrap">
+    <h2 class="sec-title">Fast enough to forget about</h2>
+    <p class="sec-lede">Measured on this machine, not estimated. A library that takes a moment to open is a library you stop opening.</p>
+
+    <dl class="numbers">
+      {%- for n in x.numbers %}
+      <div class="number">
+        <dt class="number-value">{{ n.value }}</dt>
+        <dd class="number-label">{{ n.label }}</dd>
+        <dd class="number-note">{{ n.note }}</dd>
+      </div>
+      {%- endfor %}
+    </dl>
+  </div>
+</section>
+
+<!-- ── Search ────────────────────────────────────────────────────────── -->
+<section class="band" data-section="Search">
+  <div class="wrap split">
+    <div class="split-text">
+      <h2 class="sec-title">Find it while you type</h2>
+      <p class="sec-lede">Results narrow on every keystroke. Narrow further with a field, or by format.</p>
+      <ul class="filters">
+        <li><code>artist:yorushika</code></li>
+        <li><code>album:elma</code></li>
+        <li><code>genre:rock</code></li>
+        <li><code>*.flac</code></li>
+      </ul>
+    </div>
+    <figure class="shot">
+      <img src="{{ asset('img/03-search.png') }}" alt="The search overlay filtering a library down to fifty of fifty-two tracks"
+           width="2400" height="1350" loading="lazy">
+    </figure>
+  </div>
+</section>
+
+<!-- ── Keys ──────────────────────────────────────────────────────────── -->
+<section class="band band-alt" data-section="Keys">
+  <div class="wrap split split-reverse">
+    <div class="split-text">
+      <h2 class="sec-title">Keys where you expect them</h2>
+      <p class="sec-lede">Vim motions for the lists, media keys for the music. The mouse works too — click a tab, double-click a track, <kbd>Ctrl</kbd>-drag a border to resize.</p>
+      <ul class="keys">
+        {%- for k in x.keys %}
+        <li><kbd>{{ k.key }}</kbd><span>{{ k.desc }}</span></li>
+        {%- endfor %}
+      </ul>
+    </div>
+    <figure class="shot">
+      <img src="{{ asset('img/02-help.png') }}" alt="The keybinding overlay, two columns covering playback and navigation"
+           width="2400" height="1350" loading="lazy">
+    </figure>
+  </div>
+</section>
+
+<!-- ── Requirements ──────────────────────────────────────────────────── -->
+<section class="band" data-section="Before you start">
+  <div class="wrap">
+    <h2 class="sec-title">Two things to check first</h2>
+
+    <div class="reqs">
+      <div class="req">
+        <h3>A Nerd Font</h3>
+        <p>The interface is built from <a href="https://www.nerdfonts.com/">Nerd Font</a> icons. Without one they render as empty boxes. Install <code>JetBrainsMono Nerd Font</code> or similar and set it as your terminal font.</p>
+      </div>
+      <div class="req">
+        <h3>A graphics protocol, for album art</h3>
+        <p>Cover art is read out of the audio file itself and drawn as a real image where the terminal supports it. ommp detects which protocol is available at startup — there is nothing to configure.</p>
+        <table class="protocols">
+          <tbody>
+          {%- for p in x.protocols %}
+            <tr><th scope="row">{{ p.name }}</th><td>{{ p.terms }}</td></tr>
+          {%- endfor %}
+          </tbody>
+        </table>
+        <p class="req-note">Anything else falls back to block characters, which still shows the artwork — just coarser. GPU acceleration is unrelated: Alacritty is accelerated and supports none of these; xterm is not and supports Sixel.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Install ───────────────────────────────────────────────────────── -->
+<section class="band band-close" data-section="Install">
+  <div class="wrap">
+    <h2 class="sec-title">Install</h2>
+    <div class="install-grid">
+      <div class="install-card">
+        <span class="install-label">Arch Linux</span>
+        <code class="cmd" data-copy>yay -S ommp</code>
+      </div>
+      <div class="install-card">
+        <span class="install-label">With Rust installed</span>
+        <code class="cmd" data-copy>cargo install ommp</code>
+      </div>
+      <div class="install-card">
+        <span class="install-label">From source</span>
+        <code class="cmd" data-copy>git clone https://github.com/sqzer-x/ommp</code>
+      </div>
+    </div>
+    <p class="sec-lede">Then put some music in <code>~/Music</code> and run <code>ommp</code>.</p>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <p class="foot-name">ommp</p>
+    <nav class="foot-links">
+      <a href="https://github.com/sqzer-x/ommp">GitHub</a>
+      <a href="https://crates.io/crates/ommp">crates.io</a>
+      <a href="https://aur.archlinux.org/packages/ommp">AUR</a>
+      <a href="https://github.com/sqzer-x/ommp/blob/main/LICENSE">Apache&nbsp;2.0</a>
+    </nav>
+    <p class="foot-fine">Built with <a href="https://github.com/sqzer-x/sqzass">sqzass</a>. Copyright 2026 sqzer (hyukjin an).</p>
+  </div>
+</footer>
+
+<!-- ── The app's own status bar, tracking the page ───────────────────── -->
+<div class="statusbar" aria-hidden="true">
+  <div class="sb-fill"></div>
+  <div class="sb-row">
+    <span class="sb-state">&#9654; Playing</span>
+    <span class="sb-track">ommp</span>
+    <span class="sb-time"><span class="sb-elapsed">0:00</span> / 3:57</span>
+  </div>
+</div>
+
+<script src="{{ asset('js/status.js') }}" defer></script>
+</body>
+</html>

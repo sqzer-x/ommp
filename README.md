@@ -65,10 +65,16 @@ PulseAudio or ALSA is required for audio output on Linux.
 
 ## Install
 
-Make sure you have [Rust](https://rustup.rs/) installed, then run:
+On Arch Linux:
 
 ```bash
-cargo install --git https://github.com/sqzer-x/ommp
+yay -S ommp
+```
+
+Anywhere else, with [Rust](https://rustup.rs/) installed:
+
+```bash
+cargo install ommp
 ```
 
 That's it. Now you can run `ommp` from anywhere:
@@ -106,7 +112,7 @@ cargo build --release
 
 Place your music files in `~/Music` and run `ommp`. It will automatically scan all files and subdirectories.
 
-Album art is detected automatically — just place `cover.jpg`, `folder.jpg`, `front.jpg`, or any image file in the same directory as your tracks.
+Album art comes from the audio files themselves — whatever cover is embedded in the tags. Nothing to place alongside them.
 
 ### Browsing
 
@@ -114,7 +120,7 @@ The screen is split into three panels:
 
 - **Left** — Library browser (artists, albums, genres, etc. depending on the active tab)
 - **Center** — Play queue
-- **Right** — Album art / Clock (top) + Lyrics (bottom)
+- **Right** — Album art / Clock (top) + Track info (bottom)
 
 Switch browsing modes using the tabs at the top: Queue, Directories, Artists, Albums, Genre, Format, Playlists
 

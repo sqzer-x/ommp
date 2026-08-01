@@ -78,7 +78,7 @@ fn render_column(bindings: &[(&str, &str)], theme: &Theme) -> Vec<Line<'static>>
             }
             Line::from(vec![
                 Span::styled(
-                    format!("  {:16}", key),
+                    format!("  {:18}", key),
                     Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(desc.to_string(), Style::default().fg(theme.fg)),
