@@ -202,7 +202,9 @@ pub fn render_about_modal(frame: &mut Frame, area: Rect, _theme: &Theme) {
         .add_modifier(Modifier::BOLD);
     let value_style = Style::default().fg(NEON_CYAN).bg(BG_DARK);
 
-    for (label, value) in &[("Version", "0.1.0"), ("License", "MIT")] {
+    // Read from Cargo.toml rather than a literal, so the About box cannot claim
+    // a version the build is not.
+    for (label, value) in &[("Version", env!("CARGO_PKG_VERSION")), ("License", "MIT")] {
         if cur_y < inner.y + inner.height {
             let lbl = format!("  {:12}", label);
             let val = *value;
