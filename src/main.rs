@@ -14,6 +14,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use crossterm::tty::IsTty;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 
@@ -51,6 +52,19 @@ fn restore_terminal() {
 }
 
 fn main() -> Result<()> {
+    // Raw mode fails with a bare "No such device or address" when stdin or
+    // stdout is not a terminal, which says nothing about what to do.
+    if !io::stdin().is_tty() || !io::stdout().is_tty() {
+        eprintln!("ommp is a full-screen terminal application and needs an interactive terminal.");
+        eprintln!();
+        eprintln!("Run it directly in your terminal:");
+        eprintln!();
+        eprintln!("    ommp");
+        eprintln!();
+        eprintln!("It cannot run through a pipe, a redirect, or a non-interactive shell.");
+        std::process::exit(1);
+    }
+
     setup_terminal()?;
 
     // Restore before the default hook prints: a panic message written while the

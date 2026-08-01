@@ -1,6 +1,6 @@
 [package]
 name = "ommp"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["sqzer-x"]
 description = "Oh My Music Player — a terminal music player built with ratatui"
@@ -10,7 +10,7 @@ keywords = ["music", "player", "tui", "terminal", "ratatui"]
 categories = ["command-line-utilities", "multimedia::audio"]
 # 1.2 MB that everyone installing the crate would download, for an image
 # crates.io cannot resolve from a relative README path anyway.
-exclude = ["assets/screenshot.png"]
+exclude = ["assets/screenshot.png", "packaging"]
 
 [dependencies]
 ratatui = "0.29"
