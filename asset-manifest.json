@@ -1,6 +1,6 @@
 {
   "CNAME": "/CNAME",
-  "css/main.css": "/css/main.bc496e1f.css",
+  "css/main.css": "/css/main.378a378e.css",
   "favicon.ico": "/favicon.ico",
   "fonts/bricolage-grotesque-var.woff2": "/fonts/bricolage-grotesque-var.woff2",
   "fonts/jetbrains-mono-400.woff2": "/fonts/jetbrains-mono-400.woff2",
@@ -11,5 +11,5 @@
   "img/logo.png": "/img/logo.png",
   "img/note-field.png": "/img/note-field.png",
   "img/og.png": "/img/og.png",
-  "js/status.js": "/js/status.6222b20d.js"
+  "js/status.js": "/js/status.91a500d5.js"
 }

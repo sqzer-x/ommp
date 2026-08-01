@@ -16,7 +16,7 @@
 <meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="preload" as="font" type="font/woff2" href="/fonts/jetbrains-mono-400.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/fonts/bricolage-grotesque-var.woff2" crossorigin>
-<link rel="stylesheet" href="/css/main.bc496e1f.css">
+<link rel="stylesheet" href="/css/main.378a378e.css">
 </head>
 <body>
 
@@ -34,13 +34,25 @@
     <p class="lede">ommp plays the files already on your disk: the CDs you ripped, the albums you went looking for, the folder you have been adding to for years. One command, and it plays.</p>
 
     <div class="installs">
-      <div class="install">
+<div class="install">
         <span class="install-label">Arch Linux</span>
-        <code class="cmd" data-copy>yay -S ommp</code>
+        <div class="cmdline">
+          <code class="cmd">yay -S ommp</code>
+          <button class="cmd-copy" type="button" aria-label="Copy yay -S ommp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 5 5 9-11"/></svg>
+          </button>
+        </div>
       </div>
-      <div class="install">
+<div class="install">
         <span class="install-label">Anywhere else</span>
-        <code class="cmd" data-copy>cargo install ommp</code>
+        <div class="cmdline">
+          <code class="cmd">cargo install ommp</code>
+          <button class="cmd-copy" type="button" aria-label="Copy cargo install ommp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 5 5 9-11"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -154,21 +166,30 @@
   <div class="wrap">
     <h2 class="sec-title">Install it.</h2>
 
-    <div class="install-grid">
-      <div class="install-card">
+    <div class="installs installs-left">
+<div class="install">
         <span class="install-label">Arch Linux</span>
-        <code class="cmd" data-copy>yay -S ommp</code>
+        <div class="cmdline">
+          <code class="cmd">yay -S ommp</code>
+          <button class="cmd-copy" type="button" aria-label="Copy yay -S ommp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 5 5 9-11"/></svg>
+          </button>
+        </div>
       </div>
-      <div class="install-card">
+<div class="install">
         <span class="install-label">Anywhere else</span>
-        <code class="cmd" data-copy>cargo install ommp</code>
+        <div class="cmdline">
+          <code class="cmd">cargo install ommp</code>
+          <button class="cmd-copy" type="button" aria-label="Copy cargo install ommp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 5 5 9-11"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <p class="install-close">Then put some music in <code>~/Music</code> and run <code>ommp</code>.</p>
-    <p class="fine">About 7 MB installed, linked against alsa-lib, glibc and gcc-libs and nothing else, and a 5,000-track library opens in about 18 ms once its tags are cached.</p>
-    <p class="fine">Two things to set while you are here. ommp draws its interface with <a href="https://www.nerdfonts.com/">Nerd Font</a> glyphs, so point your terminal at a Nerd Font or the icons arrive as empty boxes. And album art comes through as a real image in terminals that speak Kitty graphics, Sixel or the iTerm2 protocol; ommp works out which at startup and there is nothing for you to configure. Everywhere else the cover is drawn in blocks.</p>
-    <p class="fine">Linux only, said plainly: it is untested anywhere else and does not compile on Windows. It plays what is on your disk, so there is no streaming, no catalogue and no account, and it does not resume the track you were playing last time.</p>
   </div>
 </section>
 
@@ -196,6 +217,6 @@
   </div>
 </div>
 
-<script src="/js/status.6222b20d.js" defer></script>
+<script src="/js/status.91a500d5.js" defer></script>
 </body>
 </html>
