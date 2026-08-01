@@ -1,103 +1,95 @@
 +++
 title = "ommp — Oh My Music Player"
-description = "A terminal music player written in Rust. No MPD, no daemon — point it at ~/Music and press play."
+description = "A terminal music player written in Rust. It plays the files already on your disk, in the terminal you already have open."
 template = "landing.html"
 
 [extra]
 kicker    = "Terminal music player"
-headline  = "Point it at ~/Music."
-headline2 = "Press play."
-lede = "No MPD. No daemon. No config file. One binary that reads your tags, draws your album art in the terminal, and keeps your playlists and layout between sessions."
+headline  = "Play your own music"
+headline2 = "without leaving the terminal."
+lede = "ommp plays the files already on your disk: the CDs you ripped, the albums you went looking for, the folder you have been adding to for years. One command, and it plays."
 
-install_primary_label = "Arch Linux"
-install_primary       = "yay -S ommp"
+install_primary_label   = "Arch Linux"
+install_primary         = "yay -S ommp"
 install_secondary_label = "Anywhere else"
 install_secondary       = "cargo install ommp"
 
-# Each feature is keyed to the accent colour its tab actually uses in
+# ── 1. The artwork ───────────────────────────────────────────────────────
+art_title  = "That is your album art, in a terminal."
+art_lede   = "The cover comes out of the file itself: the same image your tags have been carrying since you ripped the disc or paid for the download."
+art_body_1 = "In Ghostty, Kitty, WezTerm, Konsole, foot, xterm and Contour, ommp hands the artwork to the terminal's own graphics protocol and it arrives as a real image, grain and gradient intact, sitting in a shell next to your prompt. Terminals without one draw the same sleeve in block characters, coarser, and still recognisably the record you know."
+art_body_2 = "Beside it, thirteen lines saying exactly what is playing, including the ones you went to some trouble over: <b>48.0 kHz</b>, <b>24-bit</b>, <b>Stereo</b>. Nothing there was fetched or guessed. All of it came off your disk, where it has been the whole time."
+
+# ── 2. Nothing to start ──────────────────────────────────────────────────
+start_title = "Nothing to start first."
+start_lede  = "No daemon in the background, no service to enable, no file to write before the first note. You type <code>ommp</code>, it reads <code>~/Music</code>, and it plays."
+start_body  = "Quit it and nothing of it keeps running. Everything it plays is already on your disk, so there is nothing to sign into, nothing to subscribe to, and nothing that stops working when a company changes its mind."
+skipped = [
+  "Create an account",
+  "Import your library",
+  "systemctl --user enable mpd",
+  "~/.config/mpd/mpd.conf",
+]
+
+# ── 3. Browse ────────────────────────────────────────────────────────────
+browse_title  = "Ask it seven ways, or just type."
+browse_lede   = "Press <kbd>1</kbd> to <kbd>7</kbd> to move along the tab strip: the queue everything lands in, the directory tree you built yourself, then artists, albums, genre, format and playlists. The same library, seven questions."
+browse_body_1 = "Directories keeps the folders you organised, in the order you organised them. Genre is whatever you wrote in it. Format counts what you have of each: FLAC, MP3, M4A, OGG, WAV, Opus, AAC, WMA."
+browse_body_2 = "When you already know the name, <kbd>Ctrl</kbd>+<kbd>S</kbd> and start typing. The list narrows on every keystroke. Put <code>artist:</code>, <code>album:</code> or <code>genre:</code> in front to say which you meant, or type <code>*.flac</code> for when you own something twice and want the good copy."
+
+# ── 4. Nothing lost ──────────────────────────────────────────────────────
+lost_title = "Nothing quietly disappears."
+lost_lede  = "The small decisions are the ones you notice on the second day."
+lost_close = "Volume, shuffle, repeat, your playlists and the pane widths you dragged all come back the way you left them. The track does not. You choose that again."
+
+# ── 5. Keys ──────────────────────────────────────────────────────────────
+keys_title  = "h j k l, Space, n."
+keys_lede   = "The keys already under your hands in every other window you have open."
+keys_body_1 = "<kbd>j</kbd> and <kbd>k</kbd> move the list, <kbd>g</kbd> and <kbd>G</kbd> jump to the ends, <kbd>h</kbd> and <kbd>l</kbd> move between panes and <kbd>Tab</kbd> does the same. <kbd>Space</kbd> plays and pauses, <kbd>n</kbd> and <kbd>N</kbd> step through the queue, <kbd>+</kbd> and <kbd>-</kbd> take the volume, the arrows seek, <kbd>s</kbd> shuffles, <kbd>r</kbd> repeats, and <kbd>b</kbd> drops the playing track into a playlist. <kbd>Ctrl</kbd>+<kbd>H</kbd> lists every key there is."
+keys_body_2 = "The mouse works too, when your hand is already there: click a tab, double-click a track, <kbd>Ctrl</kbd>-drag a border to resize a pane."
+
+# ── 6. Install ───────────────────────────────────────────────────────────
+install_title  = "Install it."
+install_lede   = "About 7 MB installed, linked against alsa-lib, glibc and gcc-libs and nothing else, and a 5,000-track library opens in about 18 ms once its tags are cached."
+install_note_1 = "Two things to set while you are here. ommp draws its interface with <a href=\"https://www.nerdfonts.com/\">Nerd Font</a> glyphs, so point your terminal at a Nerd Font or the icons arrive as empty boxes. And album art comes through as a real image in terminals that speak Kitty graphics, Sixel or the iTerm2 protocol; ommp works out which at startup and there is nothing for you to configure. Everywhere else the cover is drawn in blocks."
+install_note_2 = "Linux only, said plainly: it is untested anywhere else and does not compile on Windows. It plays what is on your disk, so there is no streaming, no catalogue and no account, and it does not resume the track you were playing last time."
+install_close  = "Then put some music in <code>~/Music</code> and run <code>ommp</code>."
+splash_note    = "The notes behind the top of this page are the ones ommp scatters across its splash screen, generated from the same hash the program uses."
+
+# The seven tabs, each in the accent colour it actually uses in
 # src/ui/widgets/tab_bar.rs, so the page and the app agree.
-[[extra.features]]
-name  = "Queue"
+[[extra.tabs]]
+name = "Queue"
 color = "#64DCFF"
-body  = "Everything queues by default. Add an album without losing what is playing, drop a track with <code>d</code>, clear it with <code>c</code>."
-
-[[extra.features]]
-name  = "Directories"
+[[extra.tabs]]
+name = "Directories"
 color = "#78FFB4"
-body  = "Browse the folders you actually organised, not a database's idea of them."
-
-[[extra.features]]
-name  = "Artists"
+[[extra.tabs]]
+name = "Artists"
 color = "#FFB464"
-body  = "Grouped by the track artist, exactly as the file is tagged. Untagged files land under one heading instead of vanishing."
-
-[[extra.features]]
-name  = "Albums"
+[[extra.tabs]]
+name = "Albums"
 color = "#C882FF"
-body  = "Paired with the album artist where it is tagged, the track artist where it is not — so two records called <em>Greatest Hits</em> stay two records."
-
-[[extra.features]]
-name  = "Genre"
+[[extra.tabs]]
+name = "Genre"
 color = "#FF7896"
-body  = "Whatever your tags say. ommp reads them, it does not invent them."
-
-[[extra.features]]
-name  = "Format"
+[[extra.tabs]]
+name = "Format"
 color = "#78C8FF"
-body  = "FLAC, MP3, M4A, OGG, WAV, Opus, AAC, WMA — with a count beside each."
-
-[[extra.features]]
-name  = "Playlists"
+[[extra.tabs]]
+name = "Playlists"
 color = "#FFDC64"
-body  = "Create, rename, star a track with <code>b</code>. Saved between sessions, and entries survive a drive that was not mounted."
 
-[[extra.numbers]]
-value = "18 ms"
-label = "to open a 5,000-track library"
-note  = "Tags are cached and re-read only when a file's timestamp or size changes. The first scan runs across every core."
-
-[[extra.numbers]]
-value = "0.3 ms"
-label = "per frame at 50,000 tracks"
-note  = "Flat, not linear — the browse views are built once when the library loads, not on every redraw."
-
-[[extra.numbers]]
-value = "7 MB"
-label = "one binary, three libraries"
-note  = "Links against alsa-lib, glibc and gcc-libs. Nothing to configure, nothing running in the background."
-
-[[extra.keys]]
-key  = "Space"
-desc = "Play / pause"
-[[extra.keys]]
-key  = "n / N"
-desc = "Next / previous"
-[[extra.keys]]
-key  = "+ / -"
-desc = "Volume"
-[[extra.keys]]
-key  = "s / r"
-desc = "Shuffle / repeat"
-[[extra.keys]]
-key  = "1–7"
-desc = "Switch tab"
-[[extra.keys]]
-key  = "Tab"
-desc = "Cycle pane focus"
-[[extra.keys]]
-key  = "Ctrl+S"
-desc = "Search"
-[[extra.keys]]
-key  = "Ctrl+H"
-desc = "Every other key"
-
-[[extra.protocols]]
-name  = "Kitty graphics"
-terms = "Ghostty, Kitty, WezTerm, Konsole"
-[[extra.protocols]]
-name  = "Sixel"
-terms = "foot, WezTerm, xterm, Contour"
-[[extra.protocols]]
-name  = "iTerm2"
-terms = "WezTerm, Konsole"
+[[extra.details]]
+color = "#FFB464"
+body = "A file with no tags at all lands under <b>Unknown Artist</b>, where you can still find it."
+[[extra.details]]
+color = "#C882FF"
+body = "An album is paired with its album artist where one is tagged and the track artist where one is not, so two records called <i>Greatest Hits</i> stay two records."
+[[extra.details]]
+color = "#FFDC64"
+body = "A playlist entry pointing at a drive that was not mounted when you started is left alone rather than pruned, and it works again when the drive comes back."
+[[extra.details]]
+color = "#78FFB4"
+body = "Add files to the folder while ommp is running and they turn up. Take some away and they go."
 +++
