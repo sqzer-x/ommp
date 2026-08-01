@@ -175,11 +175,6 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                                 scan_done = true;
                                 app.initial_scan_complete = true;
                                 dirty = true;
-                                // The splash exists to cover the scan. With the
-                                // cache that takes tens of milliseconds, so
-                                // sitting through the rest of a fixed two-second
-                                // timeline is the whole startup wait.
-                                ui.begin_splash_fade_out();
                                 _watcher = library::watcher::spawn_watcher(&music_dir, event_tx.clone());
                             }
                             Err(_) => {

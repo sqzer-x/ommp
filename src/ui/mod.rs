@@ -20,7 +20,7 @@ use panes::track_info_pane::TrackInfoPane;
 use panes::queue_pane::QueuePane;
 
 /// Splash timeline, in seconds: fade in, hold, then fade out until the end.
-/// The hold is skipped as soon as the library is ready.
+/// Always played in full — the scan runs behind it and does not cut it short.
 pub const SPLASH_FADE_IN: f32 = 0.5;
 pub const SPLASH_FADE_OUT_AT: f32 = 1.5;
 pub const SPLASH_END: f32 = 2.0;
@@ -136,8 +136,8 @@ impl Ui {
     }
 
     /// Skip the splash forward to the start of its fade-out, if it has not got
-    /// there already. Used when the scan finishes and when a key is pressed —
-    /// the animation still completes, it just stops holding.
+    /// there already. Only a keypress does this: the timeline is otherwise
+    /// fixed, and the fade-out still plays so the skip is not a hard cut.
     pub fn begin_splash_fade_out(&mut self) {
         if !self.show_splash {
             return;
@@ -319,15 +319,14 @@ mod tests {
     }
 
     #[test]
-    fn finishing_the_scan_skips_the_splash_hold() {
+    fn a_keypress_skips_the_splash_hold() {
         let mut ui = ui();
         assert!(ui.show_splash);
         assert!(elapsed(&ui) < SPLASH_FADE_OUT_AT);
 
         ui.begin_splash_fade_out();
 
-        // Straight to the fade-out rather than sitting through the hold, which
-        // with a warm cache is the entire startup wait.
+        // Straight to the fade-out rather than sitting through the hold.
         assert!(elapsed(&ui) >= SPLASH_FADE_OUT_AT);
         assert!(elapsed(&ui) < SPLASH_END, "the fade-out still plays");
     }
